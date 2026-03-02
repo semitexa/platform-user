@@ -1,0 +1,30 @@
+{
+    "name": "semitexa/platform-user",
+    "description": "Semitexa Platform User — user management, authentication provider, login/logout",
+    "type": "semitexa-module",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Semitexa",
+            "email": "support@semitexa.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "semitexa/core": "*",
+        "semitexa/auth": "*",
+        "semitexa/orm": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Semitexa\\Platform\\User\\": "src/"
+        }
+    },
+    "extra": {
+        "semitexa-module": {
+            "name": "platform-user",
+            "description": "User management: CRUD, login/logout, session auth provider"
+        }
+    },
+    "version": "0.0.1"
+}
