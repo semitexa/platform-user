@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Semitexa\Platform\User\Application\Resource;
+namespace Semitexa\Platform\User\Application\Db\MySQL\Model;
 
 use Semitexa\Orm\Adapter\MySqlType;
 use Semitexa\Orm\Attribute\Column;
@@ -11,7 +11,7 @@ use Semitexa\Orm\Attribute\Index;
 use Semitexa\Orm\Contract\DomainMappable;
 use Semitexa\Orm\Trait\HasTimestamps;
 use Semitexa\Orm\Trait\HasUuidV7;
-use Semitexa\Platform\User\Domain\User;
+use Semitexa\Platform\User\Domain\Model\User;
 
 #[FromTable(name: 'platform_users', mapTo: User::class)]
 #[Index(columns: ['email'], unique: true, name: 'uniq_platform_users_email')]

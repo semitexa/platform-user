@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Semitexa\Platform\User\Application\Handler\Request;
+namespace Semitexa\Platform\User\Application\Event\PayloadHandler;
 
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
@@ -14,7 +14,7 @@ use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Orm\OrmManager;
 use Semitexa\Platform\User\Application\Payload\Request\UserUpdatePayload;
-use Semitexa\Platform\User\Application\Resource\PlatformUserRepository;
+use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
 
 #[AsPayloadHandler(payload: UserUpdatePayload::class, resource: GenericResponse::class)]
 final class UserUpdateHandler implements HandlerInterface

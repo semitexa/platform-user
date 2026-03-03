@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Semitexa\Platform\User\Application\Handler\Request;
+namespace Semitexa\Platform\User\Application\Event\PayloadHandler;
 
 use Semitexa\Auth\Context\AuthManager;
 use Semitexa\Auth\Handler\SessionAuthHandler;
@@ -16,7 +16,7 @@ use Semitexa\Core\Response;
 use Semitexa\Core\Session\SessionInterface;
 use Semitexa\Orm\OrmManager;
 use Semitexa\Platform\User\Application\Payload\Request\LoginPayload;
-use Semitexa\Platform\User\Application\Resource\PlatformUserRepository;
+use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
 
 #[AsPayloadHandler(payload: LoginPayload::class, resource: GenericResponse::class)]
 final class LoginHandler implements HandlerInterface

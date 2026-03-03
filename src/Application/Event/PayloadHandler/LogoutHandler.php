@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Semitexa\Platform\User\Application\Handler\Request;
+namespace Semitexa\Platform\User\Application\Event\PayloadHandler;
 
 use Semitexa\Auth\Context\AuthManager;
 use Semitexa\Auth\Handler\SessionAuthHandler;

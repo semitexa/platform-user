@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Semitexa\Platform\User\Application\Handler\Request;
+namespace Semitexa\Platform\User\Application\Event\PayloadHandler;
 
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
@@ -13,11 +13,11 @@ use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Orm\OrmManager;
-use Semitexa\Platform\User\Application\Payload\Request\UserDeletePayload;
-use Semitexa\Platform\User\Application\Resource\PlatformUserRepository;
+use Semitexa\Platform\User\Application\Payload\Request\UserGetPayload;
+use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
 
-#[AsPayloadHandler(payload: UserDeletePayload::class, resource: GenericResponse::class)]
-final class UserDeleteHandler implements HandlerInterface
+#[AsPayloadHandler(payload: UserGetPayload::class, resource: GenericResponse::class)]
+final class UserGetHandler implements HandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -28,26 +28,28 @@ final class UserDeleteHandler implements HandlerInterface
             return Response::json(['error' => 'Unauthorized'], 401);
         }
 
-        if (!$payload instanceof UserDeletePayload) {
+        if (!$payload instanceof UserGetPayload) {
             return Response::json(['error' => 'Invalid payload'], 400);
         }
 
         $result = OrmManager::run(function (OrmManager $orm) use ($payload) {
             $repo = new PlatformUserRepository($orm->getAdapter());
-            $user = $repo->findById($payload->id);
-
-            if ($user === null) {
-                return false;
-            }
-
-            $repo->delete($user);
-            return true;
+            return $repo->findById($payload->id);
         });
 
-        if (!$result) {
+        if ($result === null) {
             return Response::json(['error' => 'User not found'], 404);
         }
 
-        return Response::json(['success' => true]);
+        $domain = $result->toDomain();
+
+        return Response::json([
+            'user' => [
+                'id' => $domain->id,
+                'email' => $domain->email,
+                'name' => $domain->name,
+                'is_active' => $domain->isActive,
+            ],
+        ]);
     }
 }

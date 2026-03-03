@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Semitexa\Platform\User\Domain;
+namespace Semitexa\Platform\User\Domain\Model;
 
 use Semitexa\Core\Auth\AuthenticatableInterface;
 

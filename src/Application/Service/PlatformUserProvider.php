@@ -8,7 +8,7 @@ use Semitexa\Auth\Contract\UserProviderInterface;
 use Semitexa\Core\Attributes\AsServiceContract;
 use Semitexa\Core\Auth\AuthenticatableInterface;
 use Semitexa\Orm\OrmManager;
-use Semitexa\Platform\User\Application\Resource\PlatformUserRepository;
+use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
 
 #[AsServiceContract(of: UserProviderInterface::class)]
 class PlatformUserProvider implements UserProviderInterface
@@ -19,7 +19,7 @@ class PlatformUserProvider implements UserProviderInterface
             $repo = new PlatformUserRepository($orm->getAdapter());
             $user = $repo->findById($id);
 
-            if (!$user instanceof \Semitexa\Platform\User\Domain\User) {
+            if (!$user instanceof \Semitexa\Platform\User\Domain\Model\User) {
                 return null;
             }
 
