@@ -11,8 +11,22 @@ use Semitexa\Core\Http\PayloadValidationResult;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Validation\Trait\EmailValidationTrait;
 use Semitexa\Core\Validation\Trait\NotBlankValidationTrait;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
+use App\Tests\Strategy\LoginEmailFormatStrategy;
 
-#[AsPayload(path: '/api/platform/user/login', methods: ['POST'], responseWith: GenericResponse::class)]
+// Public endpoint — no #[RequiresAuth]. SecurityStrategy skips automatically.
+#[AsPayload(
+    responseWith: GenericResponse::class,
+    path: '/api/platform/user/login',
+    methods: ['POST'])
+]
+#[TestablePayload(
+    strategies: [
+        StandardProfileStrategy::class,    // HttpMethodStrategy + TypeEnforcementStrategy
+        LoginEmailFormatStrategy::class,   // Custom: email format + blank fields → 422
+    ]
+)]
 class LoginPayload implements PayloadInterface, ValidatablePayload
 {
     use NotBlankValidationTrait;

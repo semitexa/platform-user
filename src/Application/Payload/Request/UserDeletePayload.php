@@ -5,10 +5,30 @@ declare(strict_types=1);
 namespace Semitexa\Platform\User\Application\Payload\Request;
 
 use Semitexa\Core\Attributes\AsPayload;
+use Semitexa\Core\Attributes\RequiresAuth;
 use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
+use App\Tests\Auth\SessionTestTokenProvider;
 
-#[AsPayload(path: '/api/platform/users/{id}', methods: ['DELETE'], responseWith: GenericResponse::class, requirements: ['id' => '[a-f0-9\\-]{36}'])]
+#[AsPayload(
+    responseWith: GenericResponse::class,
+    path: '/api/platform/users/{id}',
+    methods: ['DELETE'],
+    requirements: ['id' => '[a-f0-9\\-]{36}'])
+]
+#[RequiresAuth]
+#[TestablePayload(
+    strategies: [StandardProfileStrategy::class],
+    context: [
+        // Session-based auth: token = full Cookie header value, scheme = '' (no prefix)
+        'auth_header'  => 'Cookie',
+        'auth_scheme'  => '',
+        'token_provider' => SessionTestTokenProvider::class,
+        // Requires TEST_USER_EMAIL + TEST_USER_PASSWORD env vars (see SessionTestTokenProvider).
+    ]
+)]
 class UserDeletePayload implements PayloadInterface
 {
     public string $id = '';

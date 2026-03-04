@@ -26,5 +26,5 @@
             "description": "User management: CRUD, login/logout, session auth provider"
         }
     },
-    "version": "0.0.2"
+    "version": "0.0.3"
 }

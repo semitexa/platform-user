@@ -12,8 +12,21 @@ use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Validation\Trait\EmailValidationTrait;
 use Semitexa\Core\Validation\Trait\LengthValidationTrait;
 use Semitexa\Core\Validation\Trait\NotBlankValidationTrait;
+use Semitexa\Testing\Attributes\TestablePayload;
+use App\Tests\Strategy\UserCreatePasswordLengthStrategy;
+use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
 
-#[AsPayload(path: '/api/platform/users', methods: ['POST'], responseWith: GenericResponse::class)]
+#[AsPayload(
+    responseWith: GenericResponse::class,
+    path: '/api/platform/users',
+    methods: ['POST'])
+]
+#[TestablePayload(
+    strategies: [
+        StandardProfileStrategy::class,      // HttpMethodStrategy + TypeEnforcementStrategy (SecurityStrategy skips — no RequiresAuth)
+        UserCreatePasswordLengthStrategy::class, // Custom: password < 8 chars → 422 (Reflection cannot detect this min-length rule)
+    ]
+)]
 class UserCreatePayload implements PayloadInterface, ValidatablePayload
 {
     use NotBlankValidationTrait;
