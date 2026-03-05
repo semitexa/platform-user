@@ -12,12 +12,12 @@ use Semitexa\Orm\Attribute\TenantScoped;
 use Semitexa\Orm\Contract\DomainMappable;
 use Semitexa\Orm\Trait\HasTimestamps;
 use Semitexa\Orm\Trait\HasUuidV7;
-use Semitexa\Platform\User\Domain\Model\User;
+use Semitexa\Platform\User\Domain\Model\Role;
 
-#[FromTable(name: 'platform_users', mapTo: User::class)]
+#[FromTable(name: 'platform_roles', mapTo: Role::class)]
 #[TenantScoped(strategy: 'same_storage')]
-#[Index(columns: ['tenant_id', 'email'], unique: true, name: 'uniq_platform_users_tenant_email')]
-class PlatformUserResource implements DomainMappable
+#[Index(columns: ['tenant_id', 'slug'], unique: true, name: 'uniq_platform_roles_tenant_slug')]
+class RoleResource implements DomainMappable
 {
     use HasUuidV7;
     use HasTimestamps;
@@ -25,38 +25,38 @@ class PlatformUserResource implements DomainMappable
     #[Column(type: MySqlType::Varchar, length: 64, nullable: true)]
     public ?string $tenant_id = null;
 
-    #[Column(type: MySqlType::Varchar, length: 255)]
-    public string $email = '';
+    #[Column(type: MySqlType::Varchar, length: 64)]
+    public string $slug = '';
 
-    #[Column(type: MySqlType::Varchar, length: 255)]
+    #[Column(type: MySqlType::Varchar, length: 128)]
     public string $name = '';
 
-    #[Column(type: MySqlType::Varchar, length: 255)]
-    public string $password_hash = '';
+    #[Column(type: MySqlType::Varchar, length: 512, nullable: true)]
+    public ?string $description = null;
 
     #[Column(type: MySqlType::Boolean)]
-    public bool $is_active = true;
+    public bool $is_system = false;
 
-    public function toDomain(): User
+    public function toDomain(): Role
     {
-        return new User(
+        return new Role(
             id: $this->id,
-            email: $this->email,
+            slug: $this->slug,
             name: $this->name,
-            isActive: $this->is_active,
-            tenantId: $this->tenant_id,
+            description: $this->description,
+            isSystem: $this->is_system,
         );
     }
 
     public static function fromDomain(object $entity): static
     {
-        assert($entity instanceof User);
+        assert($entity instanceof Role);
         $r = new static();
         $r->id = $entity->id;
-        $r->tenant_id = $entity->tenantId;
-        $r->email = $entity->email;
+        $r->slug = $entity->slug;
         $r->name = $entity->name;
-        $r->is_active = $entity->isActive;
+        $r->description = $entity->description;
+        $r->is_system = $entity->isSystem;
         return $r;
     }
 }

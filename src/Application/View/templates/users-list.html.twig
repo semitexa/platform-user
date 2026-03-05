@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users — Semitexa Platform</title>
+    <link rel="stylesheet" href="/assets/platform-user/css/users.css">
+    <script src="/assets/platform-wm/js/wm-sdk.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <h1>Users</h1>
+            <button class="btn btn-primary" id="add-user-btn">+ Add User</button>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" class="search-input" id="search-input" placeholder="Search users by name or email...">
+        </div>
+
+        <div id="loading" style="display:none;text-align:center;padding:40px;"><div class="spinner"></div></div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Roles</th>
+                    <th>Status</th>
+                    <th>Last Login</th>
+                    <th>Profile</th>
+                </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+        </table>
+    </div>
+
+    <script type="module" src="/assets/platform-user/js/users-list.js"></script>
+</body>
+</html>

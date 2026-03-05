@@ -16,6 +16,7 @@ use Semitexa\Core\Response;
 use Semitexa\Core\Session\SessionInterface;
 use Semitexa\Platform\User\Application\Payload\Request\LoginPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
+use Semitexa\Platform\User\Domain\Service\UserActivityServiceInterface;
 
 #[AsPayloadHandler(payload: LoginPayload::class, resource: GenericResponse::class)]
 final class LoginHandler implements HandlerInterface
@@ -25,6 +26,9 @@ final class LoginHandler implements HandlerInterface
 
     #[InjectAsReadonly]
     protected UserRepositoryInterface $userRepo;
+
+    #[InjectAsReadonly]
+    protected ?UserActivityServiceInterface $activityService = null;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
@@ -44,6 +48,15 @@ final class LoginHandler implements HandlerInterface
         $this->session->regenerate();
 
         AuthManager::getInstance()->setUser($domain);
+
+        try {
+            $this->activityService?->record(
+                $domain->id,
+                'login',
+            );
+        } catch (\Throwable) {
+            // Activity recording is best-effort
+        }
 
         return Response::json([
             'user' => [

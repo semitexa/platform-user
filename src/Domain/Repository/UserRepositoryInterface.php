@@ -20,4 +20,9 @@ interface UserRepositoryInterface
     public function save(PlatformUserResource $resource): void;
 
     public function delete(PlatformUserResource $resource): void;
+
+    /**
+     * @return list<PlatformUserResource>
+     */
+    public function search(string $term, int $limit = 50): array;
 }

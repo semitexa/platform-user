@@ -1,6 +1,6 @@
 {
     "name": "semitexa/platform-user",
-    "description": "Semitexa Platform User — user management, authentication provider, login/logout",
+    "description": "Semitexa Platform User — user management, RBAC, dynamic profiles, file storage, activity tracking",
     "type": "semitexa-module",
     "license": "MIT",
     "authors": [
@@ -13,7 +13,10 @@
         "php": "^8.4",
         "semitexa/core": "*",
         "semitexa/auth": "*",
-        "semitexa/orm": "*"
+        "semitexa/orm": "*",
+        "semitexa/ssr": "*",
+        "semitexa/storage": "*",
+        "semitexa/platform-wm": "*"
     },
     "autoload": {
         "psr-4": {
@@ -23,8 +26,8 @@
     "extra": {
         "semitexa-module": {
             "name": "platform-user",
-            "description": "User management: CRUD, login/logout, session auth provider"
+            "description": "User management: CRUD, RBAC, dynamic profiles, file storage, activity tracking, WM app"
         }
     },
-    "version": "0.0.5"
+    "version": "0.1.1"
 }

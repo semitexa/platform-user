@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile — Semitexa Platform</title>
+    <link rel="stylesheet" href="/assets/platform-user/css/users.css">
+    <script src="/assets/platform-wm/js/wm-sdk.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <div id="profile-container">
+            <div style="text-align:center;padding:40px;"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <script>
+        // userId from route param or query param (when opened as child WM window)
+        window.__USER_ID__ = '{{ userId }}' || new URLSearchParams(window.location.search).get('id') || '';
+    </script>
+    <script type="module" src="/assets/platform-user/js/user-profile.js"></script>
+</body>
+</html>

@@ -13,6 +13,7 @@ final readonly class User implements AuthenticatableInterface
         public string $email,
         public string $name,
         public bool $isActive,
+        public ?string $tenantId = null,
     ) {}
 
     public function getId(): string

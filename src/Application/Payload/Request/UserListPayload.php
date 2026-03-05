@@ -13,6 +13,7 @@ class UserListPayload implements PayloadInterface
 {
     protected int $limit = 50;
     protected int $offset = 0;
+    protected ?string $search = null;
 
     public function getLimit(): int
     {
@@ -32,5 +33,15 @@ class UserListPayload implements PayloadInterface
     public function setOffset(int $offset): void
     {
         $this->offset = max(0, $offset);
+    }
+
+    public function getSearch(): ?string
+    {
+        return $this->search;
+    }
+
+    public function setSearch(string $search): void
+    {
+        $this->search = $search;
     }
 }

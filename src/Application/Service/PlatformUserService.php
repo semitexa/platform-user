@@ -59,4 +59,15 @@ final class PlatformUserService implements UserRepositoryInterface
             $repo->delete($resource);
         });
     }
+
+    /**
+     * @return list<PlatformUserResource>
+     */
+    public function search(string $term, int $limit = 50): array
+    {
+        return OrmManager::run(function (OrmManager $orm) use ($term, $limit) {
+            $repo = new PlatformUserRepository($orm->getAdapter());
+            return $repo->search($term, $limit);
+        });
+    }
 }

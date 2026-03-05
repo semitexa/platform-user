@@ -37,7 +37,26 @@ class PlatformUserRepository extends AbstractRepository
         $sql = $this->select()->limit($limit)->buildSql();
         $adapter = $this->getAdapter();
         $rows = $adapter->execute($sql, [])->rows;
-        
+
+        $hydrator = new \Semitexa\Orm\Hydration\Hydrator();
+        $resources = [];
+        foreach ($rows as $row) {
+            $resources[] = $hydrator->hydrate($row, PlatformUserResource::class);
+        }
+        return $resources;
+    }
+
+    /**
+     * @return list<PlatformUserResource>
+     */
+    public function search(string $term, int $limit = 50): array
+    {
+        $like = '%' . $term . '%';
+        $table = $this->getTableName();
+        $sql = "SELECT * FROM `{$table}` WHERE (`name` LIKE ? OR `email` LIKE ?) LIMIT {$limit}";
+        $adapter = $this->getAdapter();
+        $rows = $adapter->execute($sql, [$like, $like])->rows;
+
         $hydrator = new \Semitexa\Orm\Hydration\Hydrator();
         $resources = [];
         foreach ($rows as $row) {
