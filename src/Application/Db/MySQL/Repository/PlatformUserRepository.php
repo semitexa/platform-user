@@ -16,6 +16,9 @@ class PlatformUserRepository extends AbstractRepository
 
     public function findById(int|string $id): ?PlatformUserResource
     {
+        if (is_string($id) && strlen($id) === 36 && str_contains($id, '-')) {
+            $id = \Semitexa\Orm\Uuid\Uuid7::toBytes($id);
+        }
         return $this->select()
             ->where($this->getPkColumn(), '=', $id)
             ->fetchOneAsResource();

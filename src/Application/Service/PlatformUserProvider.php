@@ -18,7 +18,22 @@ class PlatformUserProvider implements UserProviderInterface
 
     public function findById(string $id): ?AuthenticatableInterface
     {
-        $user = $this->userRepo->findById($id);
+        try {
+            $user = $this->userRepo->findById($id);
+        } catch (\Throwable $e) {
+            \Semitexa\Core\Debug\SessionDebugLog::log('PlatformUserProvider.findById.ERROR', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+            ]);
+            return null;
+        }
+
+        \Semitexa\Core\Debug\SessionDebugLog::log('PlatformUserProvider.findById', [
+            'id' => $id,
+            'found' => $user !== null,
+            'repo_class' => get_class($this->userRepo),
+        ]);
 
         if ($user === null) {
             return null;
