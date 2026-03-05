@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Semitexa\Platform\User\Application\Event\PayloadHandler;
+namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
@@ -12,15 +12,17 @@ use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
-use Semitexa\Orm\OrmManager;
-use Semitexa\Platform\User\Application\Payload\Request\UserGetPayload;
-use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
+use Semitexa\Platform\User\Application\Payload\Request\UserListPayload;
+use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 
-#[AsPayloadHandler(payload: UserGetPayload::class, resource: GenericResponse::class)]
-final class UserGetHandler implements HandlerInterface
+#[AsPayloadHandler(payload: UserListPayload::class, resource: GenericResponse::class)]
+final class UserListHandler implements HandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
+
+    #[InjectAsReadonly]
+    protected UserRepositoryInterface $userRepo;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
@@ -28,28 +30,23 @@ final class UserGetHandler implements HandlerInterface
             return Response::json(['error' => 'Unauthorized'], 401);
         }
 
-        if (!$payload instanceof UserGetPayload) {
+        if (!$payload instanceof UserListPayload) {
             return Response::json(['error' => 'Invalid payload'], 400);
         }
 
-        $result = OrmManager::run(function (OrmManager $orm) use ($payload) {
-            $repo = new PlatformUserRepository($orm->getAdapter());
-            return $repo->findById($payload->id);
-        });
+        $resources = $this->userRepo->findAll($payload->getLimit());
 
-        if ($result === null) {
-            return Response::json(['error' => 'User not found'], 404);
-        }
-
-        $domain = $result->toDomain();
-
-        return Response::json([
-            'user' => [
+        $users = [];
+        foreach ($resources as $r) {
+            $domain = $r->toDomain();
+            $users[] = [
                 'id' => $domain->id,
                 'email' => $domain->email,
                 'name' => $domain->name,
                 'is_active' => $domain->isActive,
-            ],
-        ]);
+            ];
+        }
+
+        return Response::json(['users' => $users]);
     }
 }

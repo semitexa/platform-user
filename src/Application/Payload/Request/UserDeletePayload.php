@@ -27,6 +27,8 @@ use App\Tests\Auth\SessionTestTokenProvider;
         'auth_scheme'  => '',
         'token_provider' => SessionTestTokenProvider::class,
         // Requires TEST_USER_EMAIL + TEST_USER_PASSWORD env vars (see SessionTestTokenProvider).
+        // id is a URL path parameter — type cannot be mutated via request body
+        'type_mutation' => false,
     ]
 )]
 class UserDeletePayload implements PayloadInterface

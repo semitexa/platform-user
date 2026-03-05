@@ -8,16 +8,16 @@ use Semitexa\Platform\User\Application\Db\MySQL\Model\PlatformUserResource;
 
 interface UserRepositoryInterface
 {
-    public function findById(string $id): ?object;
+    public function findById(string $id): ?PlatformUserResource;
 
     public function findByEmail(string $email): ?PlatformUserResource;
 
     /**
-     * @return list<object>
+     * @return list<PlatformUserResource>
      */
     public function findAll(int $limit = 100): array;
 
-    public function save(object $resource): void;
+    public function save(PlatformUserResource $resource): void;
 
-    public function delete(object $resource): void;
+    public function delete(PlatformUserResource $resource): void;
 }

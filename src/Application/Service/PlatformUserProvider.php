@@ -6,28 +6,30 @@ namespace Semitexa\Platform\User\Application\Service;
 
 use Semitexa\Auth\Contract\UserProviderInterface;
 use Semitexa\Core\Attributes\AsServiceContract;
+use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthenticatableInterface;
-use Semitexa\Orm\OrmManager;
-use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
+use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 
 #[AsServiceContract(of: UserProviderInterface::class)]
 class PlatformUserProvider implements UserProviderInterface
 {
+    #[InjectAsReadonly]
+    protected UserRepositoryInterface $userRepo;
+
     public function findById(string $id): ?AuthenticatableInterface
     {
-        return OrmManager::run(function (OrmManager $orm) use ($id) {
-            $repo = new PlatformUserRepository($orm->getAdapter());
-            $user = $repo->findById($id);
+        $user = $this->userRepo->findById($id);
 
-            if (!$user instanceof \Semitexa\Platform\User\Domain\Model\User) {
-                return null;
-            }
+        if ($user === null) {
+            return null;
+        }
 
-            if (!$user->isActive) {
-                return null;
-            }
+        $domain = $user->toDomain();
 
-            return $user;
-        });
+        if (!$domain->isActive) {
+            return null;
+        }
+
+        return $domain;
     }
 }

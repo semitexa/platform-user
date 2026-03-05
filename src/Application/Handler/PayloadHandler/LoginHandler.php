@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Semitexa\Platform\User\Application\Event\PayloadHandler;
+namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 
 use Semitexa\Auth\Context\AuthManager;
 use Semitexa\Auth\Handler\SessionAuthHandler;
@@ -14,9 +14,8 @@ use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Core\Session\SessionInterface;
-use Semitexa\Orm\OrmManager;
 use Semitexa\Platform\User\Application\Payload\Request\LoginPayload;
-use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
+use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 
 #[AsPayloadHandler(payload: LoginPayload::class, resource: GenericResponse::class)]
 final class LoginHandler implements HandlerInterface
@@ -24,48 +23,33 @@ final class LoginHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected SessionInterface $session;
 
+    #[InjectAsReadonly]
+    protected UserRepositoryInterface $userRepo;
+
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
         if (!$payload instanceof LoginPayload) {
             return Response::json(['error' => 'Invalid payload'], 400);
         }
 
-        $email = $payload->getEmail();
-        $password = $payload->getPassword();
+        $user = $this->userRepo->findByEmail($payload->getEmail());
 
-        $result = OrmManager::run(function (OrmManager $orm) use ($email, $password) {
-            $repo = new PlatformUserRepository($orm->getAdapter());
-            $user = $repo->findByEmail($email);
-
-            if ($user === null) {
-                return null;
-            }
-
-            if (!$user->is_active) {
-                return null;
-            }
-
-            if (!password_verify($password, $user->password_hash)) {
-                return null;
-            }
-
-            return $user->toDomain();
-        });
-
-        if ($result === null) {
+        if ($user === null || !$user->is_active || !password_verify($payload->getPassword(), $user->password_hash)) {
             return Response::json(['error' => 'Invalid credentials'], 401);
         }
 
-        $this->session->set(SessionAuthHandler::SESSION_USER_KEY, $result->getId());
+        $domain = $user->toDomain();
+
+        $this->session->set(SessionAuthHandler::SESSION_USER_KEY, $domain->getId());
         $this->session->regenerate();
 
-        AuthManager::getInstance()->setUser($result);
+        AuthManager::getInstance()->setUser($domain);
 
         return Response::json([
             'user' => [
-                'id' => $result->id,
-                'email' => $result->email,
-                'name' => $result->name,
+                'id' => $domain->id,
+                'email' => $domain->email,
+                'name' => $domain->name,
             ],
         ]);
     }
