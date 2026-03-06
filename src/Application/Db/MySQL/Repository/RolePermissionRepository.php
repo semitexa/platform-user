@@ -24,8 +24,11 @@ class RolePermissionRepository extends AbstractRepository
         if (strlen($roleId) === 36 && str_contains($roleId, '-')) {
             $roleId = Uuid7::toBytes($roleId);
         }
-        $sql = $this->select()->where('role_id', '=', $roleId)->buildSql();
-        $rows = $this->getAdapter()->execute($sql, ['role_id' => $roleId])->rows;
+        $table = $this->getTableName();
+        $rows = $this->getAdapter()->execute(
+            "SELECT * FROM `{$table}` WHERE `role_id` = ?",
+            [$roleId],
+        )->rows;
 
         $hydrator = new Hydrator();
         $resources = [];

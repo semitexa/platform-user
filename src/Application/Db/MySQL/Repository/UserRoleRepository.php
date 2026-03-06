@@ -24,8 +24,11 @@ class UserRoleRepository extends AbstractRepository
         if (strlen($userId) === 36 && str_contains($userId, '-')) {
             $userId = Uuid7::toBytes($userId);
         }
-        $sql = $this->select()->where('user_id', '=', $userId)->buildSql();
-        $rows = $this->getAdapter()->execute($sql, ['user_id' => $userId])->rows;
+        $table = $this->getTableName();
+        $rows = $this->getAdapter()->execute(
+            "SELECT * FROM `{$table}` WHERE `user_id` = ?",
+            [$userId],
+        )->rows;
 
         $hydrator = new Hydrator();
         $resources = [];

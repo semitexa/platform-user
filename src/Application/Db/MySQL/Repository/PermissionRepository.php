@@ -36,8 +36,11 @@ class PermissionRepository extends AbstractRepository
      */
     public function findByGroup(string $groupKey): array
     {
-        $sql = $this->select()->where('group_key', '=', $groupKey)->buildSql();
-        $rows = $this->getAdapter()->execute($sql, ['group_key' => $groupKey])->rows;
+        $table = $this->getTableName();
+        $rows = $this->getAdapter()->execute(
+            "SELECT * FROM `{$table}` WHERE `group_key` = ?",
+            [$groupKey],
+        )->rows;
 
         $hydrator = new Hydrator();
         $resources = [];
