@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Semitexa\Platform\User\App;
+namespace Semitexa\Platform\User\Application\WmApp;
 
 use Semitexa\Platform\Wm\Application\Attribute\AsWmApp;
 
