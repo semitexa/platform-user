@@ -6,22 +6,28 @@ namespace Semitexa\Platform\User\Application\Db\MySQL\Model;
 
 use Semitexa\Orm\Adapter\MySqlType;
 use Semitexa\Orm\Attribute\Column;
+use Semitexa\Orm\Attribute\Filterable;
 use Semitexa\Orm\Attribute\FromTable;
 use Semitexa\Orm\Contract\DomainMappable;
+use Semitexa\Orm\Contract\FilterableResourceInterface;
+use Semitexa\Orm\Trait\FilterableTrait;
 use Semitexa\Orm\Trait\HasUuidV7;
 use Semitexa\Platform\User\Domain\Model\Permission;
 
 #[FromTable(name: 'platform_permissions', mapTo: Permission::class)]
-class PermissionResource implements DomainMappable
+class PermissionResource implements DomainMappable, FilterableResourceInterface
 {
     use HasUuidV7;
+    use FilterableTrait;
 
+    #[Filterable]
     #[Column(type: MySqlType::Varchar, length: 128)]
     public string $slug = '';
 
     #[Column(type: MySqlType::Varchar, length: 255)]
     public string $name = '';
 
+    #[Filterable]
     #[Column(type: MySqlType::Varchar, length: 64)]
     public string $group_key = '';
 

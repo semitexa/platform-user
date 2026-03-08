@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Db\MySQL\Repository;
 
-use Semitexa\Orm\Hydration\Hydrator;
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\Repository\AbstractRepository;
 use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\ProfileFieldResource;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 
-class ProfileFieldRepository extends AbstractRepository
+#[SatisfiesRepositoryContract(of: ProfileFieldRepositoryInterface::class)]
+class ProfileFieldRepository extends AbstractRepository implements ProfileFieldRepositoryInterface
 {
     protected function getResourceClass(): string
     {
@@ -26,20 +28,9 @@ class ProfileFieldRepository extends AbstractRepository
             ->fetchOneAsResource();
     }
 
-    /**
-     * @return list<ProfileFieldResource>
-     */
-    public function findByTenant(): array
+    public function findAll(int $limit = 1000): array
     {
-        $sql = $this->select()->buildSql();
-        $rows = $this->getAdapter()->execute($sql, [])->rows;
-
-        $hydrator = new Hydrator();
-        $resources = [];
-        foreach ($rows as $row) {
-            $resources[] = $hydrator->hydrate($row, ProfileFieldResource::class);
-        }
-        return $resources;
+        return $this->select()->limit($limit)->fetchAll();
     }
 
     public function findBySlug(string $slug): ?ProfileFieldResource

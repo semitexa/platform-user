@@ -54,21 +54,19 @@ final class UserProfileGetHandler implements HandlerInterface
 
         $user = $userResource->toDomain();
 
-        $fieldResources = $this->profileFieldService->findAll();
-        $valueResources = $this->profileValueService->findByUserId($payload->id);
+        $profileFields = $this->profileFieldService->findAll();
+        $profileValues = $this->profileValueService->findByUserId($payload->id);
 
         $valuesByFieldId = [];
-        foreach ($valueResources as $v) {
-            $vDomain = $v->toDomain();
-            $valuesByFieldId[$vDomain->fieldId] = $vDomain;
+        foreach ($profileValues as $v) {
+            $valuesByFieldId[$v->fieldId] = $v;
         }
 
         $fields = [];
         $requiredCount = 0;
         $filledRequired = 0;
 
-        foreach ($fieldResources as $fr) {
-            $fd = $fr->toDomain();
+        foreach ($profileFields as $fd) {
             $value = $valuesByFieldId[$fd->id] ?? null;
 
             $fields[] = [

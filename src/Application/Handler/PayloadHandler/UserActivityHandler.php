@@ -34,17 +34,14 @@ final class UserActivityHandler implements HandlerInterface
             return Response::json(['error' => 'Invalid payload'], 400);
         }
 
-        $resources = $this->activityService->findByUserId($payload->id);
-
         $activity = [];
-        foreach ($resources as $r) {
-            $domain = $r->toDomain();
+        foreach ($this->activityService->findByUserId($payload->id) as $a) {
             $activity[] = [
-                'id' => $domain->id,
-                'action' => $domain->action,
-                'ip_address' => $domain->ipAddress,
-                'user_agent' => $domain->userAgent,
-                'created_at' => $domain->createdAt?->format(\DateTimeInterface::ATOM),
+                'id' => $a->id,
+                'action' => $a->action,
+                'ip_address' => $a->ipAddress,
+                'user_agent' => $a->userAgent,
+                'created_at' => $a->createdAt?->format(\DateTimeInterface::ATOM),
             ];
         }
 

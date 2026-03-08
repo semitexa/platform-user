@@ -4,50 +4,29 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Db\MySQL\Repository;
 
-use Semitexa\Orm\Hydration\Hydrator;
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\Repository\AbstractRepository;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\PermissionResource;
+use Semitexa\Platform\User\Domain\Repository\PermissionRepositoryInterface;
 
-class PermissionRepository extends AbstractRepository
+#[SatisfiesRepositoryContract(of: PermissionRepositoryInterface::class)]
+class PermissionRepository extends AbstractRepository implements PermissionRepositoryInterface
 {
     protected function getResourceClass(): string
     {
         return PermissionResource::class;
     }
 
-    /**
-     * @return list<PermissionResource>
-     */
     public function findAll(int $limit = 1000): array
     {
-        $sql = $this->select()->limit($limit)->buildSql();
-        $rows = $this->getAdapter()->execute($sql, [])->rows;
-
-        $hydrator = new Hydrator();
-        $resources = [];
-        foreach ($rows as $row) {
-            $resources[] = $hydrator->hydrate($row, PermissionResource::class);
-        }
-        return $resources;
+        return $this->select()->limit($limit)->fetchAll();
     }
 
-    /**
-     * @return list<PermissionResource>
-     */
     public function findByGroup(string $groupKey): array
     {
-        $table = $this->getTableName();
-        $rows = $this->getAdapter()->execute(
-            "SELECT * FROM `{$table}` WHERE `group_key` = ?",
-            [$groupKey],
-        )->rows;
-
-        $hydrator = new Hydrator();
-        $resources = [];
-        foreach ($rows as $row) {
-            $resources[] = $hydrator->hydrate($row, PermissionResource::class);
-        }
-        return $resources;
+        return $this->select()
+            ->where('group_key', '=', $groupKey)
+            ->fetchAll();
     }
 
     public function findBySlug(string $slug): ?PermissionResource

@@ -4,16 +4,26 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Db\MySQL\Repository;
 
-use Semitexa\Orm\Hydration\Hydrator;
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\Repository\AbstractRepository;
 use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\RolePermissionResource;
+use Semitexa\Platform\User\Domain\Repository\RolePermissionRepositoryInterface;
 
-class RolePermissionRepository extends AbstractRepository
+#[SatisfiesRepositoryContract(of: RolePermissionRepositoryInterface::class)]
+class RolePermissionRepository extends AbstractRepository implements RolePermissionRepositoryInterface
 {
     protected function getResourceClass(): string
     {
         return RolePermissionResource::class;
+    }
+
+    private function normalizeUuid(string $id): string
+    {
+        if (strlen($id) === 36 && str_contains($id, '-')) {
+            return Uuid7::toBytes($id);
+        }
+        return $id;
     }
 
     /**
@@ -21,29 +31,14 @@ class RolePermissionRepository extends AbstractRepository
      */
     public function findByRoleId(string $roleId): array
     {
-        if (strlen($roleId) === 36 && str_contains($roleId, '-')) {
-            $roleId = Uuid7::toBytes($roleId);
-        }
-        $table = $this->getTableName();
-        $rows = $this->getAdapter()->execute(
-            "SELECT * FROM `{$table}` WHERE `role_id` = ?",
-            [$roleId],
-        )->rows;
-
-        $hydrator = new Hydrator();
-        $resources = [];
-        foreach ($rows as $row) {
-            $resources[] = $hydrator->hydrate($row, RolePermissionResource::class);
-        }
-        return $resources;
+        return $this->select()
+            ->where('role_id', '=', $this->normalizeUuid($roleId))
+            ->fetchAllAsResource();
     }
 
     public function deleteByRoleId(string $roleId): void
     {
-        if (strlen($roleId) === 36 && str_contains($roleId, '-')) {
-            $roleId = Uuid7::toBytes($roleId);
-        }
         $table = $this->getTableName();
-        $this->getAdapter()->execute("DELETE FROM `{$table}` WHERE `role_id` = ?", [$roleId]);
+        $this->getAdapter()->execute("DELETE FROM `{$table}` WHERE `role_id` = ?", [$this->normalizeUuid($roleId)]);
     }
 }

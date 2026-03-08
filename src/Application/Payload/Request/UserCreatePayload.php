@@ -14,7 +14,7 @@ use Semitexa\Core\Validation\Trait\LengthValidationTrait;
 use Semitexa\Core\Validation\Trait\NotBlankValidationTrait;
 use Semitexa\Testing\Attributes\TestablePayload;
 use App\Tests\Strategy\UserCreatePasswordLengthStrategy;
-use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
+use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 
 #[AsPayload(
     responseWith: GenericResponse::class,
@@ -23,8 +23,8 @@ use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
 ]
 #[TestablePayload(
     strategies: [
-        StandardProfileStrategy::class,      // HttpMethodStrategy + TypeEnforcementStrategy (SecurityStrategy skips — no RequiresAuth)
-        UserCreatePasswordLengthStrategy::class, // Custom: password < 8 chars → 422 (Reflection cannot detect this min-length rule)
+        ParanoiaProfileStrategy::class,      // Standard (Auth, Method, Type) + Monkey + MemoryLeak
+        UserCreatePasswordLengthStrategy::class, // Custom: password < 8 chars → 422
     ]
 )]
 class UserCreatePayload implements PayloadInterface, ValidatablePayload

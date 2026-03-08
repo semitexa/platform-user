@@ -7,8 +7,11 @@ namespace Semitexa\Platform\User\Application\Payload\Request;
 use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
 
 #[AsPayload(path: '/api/platform/users', methods: ['GET'], responseWith: GenericResponse::class)]
+#[TestablePayload(strategies: [StandardProfileStrategy::class])]
 class UserListPayload implements PayloadInterface
 {
     protected int $limit = 50;

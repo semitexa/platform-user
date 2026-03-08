@@ -11,29 +11,25 @@ use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
-use Semitexa\Orm\OrmManager;
-use Semitexa\Platform\User\Application\Db\MySQL\Repository\RoleRepository;
 use Semitexa\Platform\User\Application\Payload\Request\RoleListPayload;
+use Semitexa\Platform\User\Domain\Repository\RoleRepositoryInterface;
 
 #[AsPayloadHandler(payload: RoleListPayload::class, resource: GenericResponse::class)]
 final class RoleListHandler implements HandlerInterface
 {
+    #[InjectAsReadonly]
+    protected RoleRepositoryInterface $roleRepo;
+
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
-        $roleResources = OrmManager::run(function (OrmManager $orm) {
-            $repo = new RoleRepository($orm->getAdapter());
-            return $repo->findAll();
-        });
-
         $roles = [];
-        foreach ($roleResources as $r) {
-            $domain = $r->toDomain();
+        foreach ($this->roleRepo->findAll() as $role) {
             $roles[] = [
-                'id' => $domain->id,
-                'slug' => $domain->slug,
-                'name' => $domain->name,
-                'description' => $domain->description,
-                'is_system' => $domain->isSystem,
+                'id' => $role->id,
+                'slug' => $role->slug,
+                'name' => $role->name,
+                'description' => $role->description,
+                'is_system' => $role->isSystem,
             ];
         }
 

@@ -9,8 +9,11 @@ use Semitexa\Core\Attributes\RequiresAuth;
 use Semitexa\Core\Attributes\RequiresPermission;
 use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Ssr\Http\Response\HtmlResponse;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
 
 #[AsPayload(path: '/platform/users/{id}', methods: ['GET'], responseWith: HtmlResponse::class, requirements: ['id' => '[a-f0-9\\-]{36}'])]
+#[TestablePayload(strategies: [StandardProfileStrategy::class])]
 #[RequiresAuth]
 #[RequiresPermission('users.list')]
 class UserProfilePagePayload implements PayloadInterface

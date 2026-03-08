@@ -56,21 +56,19 @@ final class MeGetHandler implements HandlerInterface
 
         $user = $userResource->toDomain();
 
-        $fieldResources = $this->profileFieldService->findAll();
-        $valueResources = $this->profileValueService->findByUserId($userId);
+        $profileFields = $this->profileFieldService->findAll();
+        $profileValues = $this->profileValueService->findByUserId($userId);
 
         $valuesByFieldId = [];
-        foreach ($valueResources as $v) {
-            $vDomain = $v->toDomain();
-            $valuesByFieldId[$vDomain->fieldId] = $vDomain;
+        foreach ($profileValues as $v) {
+            $valuesByFieldId[$v->fieldId] = $v;
         }
 
         $fields = [];
         $requiredCount = 0;
         $filledRequired = 0;
 
-        foreach ($fieldResources as $fr) {
-            $fd = $fr->toDomain();
+        foreach ($profileFields as $fd) {
             $value = $valuesByFieldId[$fd->id] ?? null;
 
             $fields[] = [
@@ -111,7 +109,7 @@ final class MeGetHandler implements HandlerInterface
             'fields' => $fields,
             'roles' => $roles,
             'profile_completeness' => $completeness,
-            'last_login' => $lastLogin?->toDomain()->createdAt?->format(\DateTimeInterface::ATOM),
+            'last_login' => $lastLogin?->createdAt?->format(\DateTimeInterface::ATOM),
         ]);
     }
 }

@@ -11,8 +11,11 @@ use Semitexa\Core\Http\PayloadValidationResult;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Validation\Trait\EmailValidationTrait;
 use Semitexa\Core\Validation\Trait\LengthValidationTrait;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 
 #[AsPayload(path: '/api/platform/users/{id}', methods: ['PATCH'], responseWith: GenericResponse::class, requirements: ['id' => '[a-f0-9\\-]{36}'])]
+#[TestablePayload(strategies: [ParanoiaProfileStrategy::class])]
 class UserUpdatePayload implements PayloadInterface, ValidatablePayload
 {
     use EmailValidationTrait;

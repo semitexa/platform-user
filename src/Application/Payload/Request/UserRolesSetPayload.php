@@ -9,8 +9,11 @@ use Semitexa\Core\Attributes\RequiresAuth;
 use Semitexa\Core\Attributes\RequiresPermission;
 use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 
 #[AsPayload(path: '/api/platform/users/{id}/roles', methods: ['PUT'], responseWith: GenericResponse::class, requirements: ['id' => '[a-f0-9\\-]{36}'])]
+#[TestablePayload(strategies: [ParanoiaProfileStrategy::class])]
 #[RequiresAuth]
 #[RequiresPermission('roles.manage')]
 class UserRolesSetPayload implements PayloadInterface

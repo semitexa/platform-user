@@ -4,16 +4,26 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Db\MySQL\Repository;
 
-use Semitexa\Orm\Hydration\Hydrator;
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\Repository\AbstractRepository;
 use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\UserRoleResource;
+use Semitexa\Platform\User\Domain\Repository\UserRoleRepositoryInterface;
 
-class UserRoleRepository extends AbstractRepository
+#[SatisfiesRepositoryContract(of: UserRoleRepositoryInterface::class)]
+class UserRoleRepository extends AbstractRepository implements UserRoleRepositoryInterface
 {
     protected function getResourceClass(): string
     {
         return UserRoleResource::class;
+    }
+
+    private function normalizeUuid(string $id): string
+    {
+        if (strlen($id) === 36 && str_contains($id, '-')) {
+            return Uuid7::toBytes($id);
+        }
+        return $id;
     }
 
     /**
@@ -21,43 +31,22 @@ class UserRoleRepository extends AbstractRepository
      */
     public function findByUserId(string $userId): array
     {
-        if (strlen($userId) === 36 && str_contains($userId, '-')) {
-            $userId = Uuid7::toBytes($userId);
-        }
-        $table = $this->getTableName();
-        $rows = $this->getAdapter()->execute(
-            "SELECT * FROM `{$table}` WHERE `user_id` = ?",
-            [$userId],
-        )->rows;
-
-        $hydrator = new Hydrator();
-        $resources = [];
-        foreach ($rows as $row) {
-            $resources[] = $hydrator->hydrate($row, UserRoleResource::class);
-        }
-        return $resources;
+        return $this->select()
+            ->where('user_id', '=', $this->normalizeUuid($userId))
+            ->fetchAllAsResource();
     }
 
     public function findByUserAndRole(string $userId, string $roleId): ?UserRoleResource
     {
-        if (strlen($userId) === 36 && str_contains($userId, '-')) {
-            $userId = Uuid7::toBytes($userId);
-        }
-        if (strlen($roleId) === 36 && str_contains($roleId, '-')) {
-            $roleId = Uuid7::toBytes($roleId);
-        }
         return $this->select()
-            ->where('user_id', '=', $userId)
-            ->where('role_id', '=', $roleId)
+            ->where('user_id', '=', $this->normalizeUuid($userId))
+            ->where('role_id', '=', $this->normalizeUuid($roleId))
             ->fetchOneAsResource();
     }
 
     public function deleteByUserId(string $userId): void
     {
-        if (strlen($userId) === 36 && str_contains($userId, '-')) {
-            $userId = Uuid7::toBytes($userId);
-        }
         $table = $this->getTableName();
-        $this->getAdapter()->execute("DELETE FROM `{$table}` WHERE `user_id` = ?", [$userId]);
+        $this->getAdapter()->execute("DELETE FROM `{$table}` WHERE `user_id` = ?", [$this->normalizeUuid($userId)]);
     }
 }
