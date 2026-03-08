@@ -14,10 +14,10 @@ use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserListPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileValueServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
-use Semitexa\Platform\User\Domain\Service\UserActivityServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
 #[AsPayloadHandler(payload: UserListPayload::class, resource: GenericResponse::class)]
 final class UserListHandler implements HandlerInterface
@@ -32,13 +32,13 @@ final class UserListHandler implements HandlerInterface
     protected RbacServiceInterface $rbacService;
 
     #[InjectAsReadonly]
-    protected UserActivityServiceInterface $activityService;
+    protected UserActivityRepositoryInterface $activityService;
 
     #[InjectAsReadonly]
-    protected ProfileFieldServiceInterface $profileFieldService;
+    protected ProfileFieldRepositoryInterface $profileFieldService;
 
     #[InjectAsReadonly]
-    protected ProfileValueServiceInterface $profileValueService;
+    protected ProfileValueRepositoryInterface $profileValueService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {

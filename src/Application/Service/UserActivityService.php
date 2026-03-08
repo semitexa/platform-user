@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Service;
 
-use Semitexa\Core\Attributes\AsServiceContract;
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\OrmManager;
 use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\UserActivityResource;
 use Semitexa\Platform\User\Application\Db\MySQL\Repository\UserActivityRepository;
-use Semitexa\Platform\User\Domain\Service\UserActivityServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
-#[AsServiceContract(of: UserActivityServiceInterface::class)]
-final class UserActivityService implements UserActivityServiceInterface
+#[SatisfiesRepositoryContract(of: UserActivityRepositoryInterface::class)]
+final class UserActivityService implements UserActivityRepositoryInterface
 {
     /** @return list<UserActivityResource> */
     public function findByUserId(string $userId, int $limit = 50): array

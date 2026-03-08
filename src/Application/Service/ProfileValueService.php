@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Service;
 
-use Semitexa\Core\Attributes\AsServiceContract;
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\OrmManager;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\ProfileValueResource;
 use Semitexa\Platform\User\Application\Db\MySQL\Repository\ProfileValueRepository;
-use Semitexa\Platform\User\Domain\Service\ProfileValueServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 
-#[AsServiceContract(of: ProfileValueServiceInterface::class)]
-final class ProfileValueService implements ProfileValueServiceInterface
+#[SatisfiesRepositoryContract(of: ProfileValueRepositoryInterface::class)]
+final class ProfileValueService implements ProfileValueRepositoryInterface
 {
     /** @return list<ProfileValueResource> */
     public function findByUserId(string $userId): array

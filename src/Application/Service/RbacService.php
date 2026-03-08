@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Service;
 
-use Semitexa\Core\Attributes\AsServiceContract;
+use Semitexa\Core\Attributes\SatisfiesServiceContract;
 use Semitexa\Orm\OrmManager;
 use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\PermissionResource;
@@ -18,7 +18,7 @@ use Semitexa\Platform\User\Domain\Model\Permission;
 use Semitexa\Platform\User\Domain\Model\Role;
 use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
 
-#[AsServiceContract(of: RbacServiceInterface::class)]
+#[SatisfiesServiceContract(of: RbacServiceInterface::class)]
 final class RbacService implements RbacServiceInterface
 {
     /** @return list<Role> */

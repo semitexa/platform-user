@@ -14,8 +14,8 @@ use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserProfileGetPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileValueServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
 
 #[AsPayloadHandler(payload: UserProfileGetPayload::class, resource: GenericResponse::class)]
@@ -28,10 +28,10 @@ final class UserProfileGetHandler implements HandlerInterface
     protected UserRepositoryInterface $userRepo;
 
     #[InjectAsReadonly]
-    protected ProfileFieldServiceInterface $profileFieldService;
+    protected ProfileFieldRepositoryInterface $profileFieldService;
 
     #[InjectAsReadonly]
-    protected ProfileValueServiceInterface $profileValueService;
+    protected ProfileValueRepositoryInterface $profileValueService;
 
     #[InjectAsReadonly]
     protected RbacServiceInterface $rbacService;

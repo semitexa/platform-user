@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Service;
 
-use Semitexa\Core\Attributes\AsServiceContract;
+use Semitexa\Core\Attributes\SatisfiesServiceContract;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Orm\OrmManager;
 use Semitexa\Orm\Uuid\Uuid7;
@@ -13,7 +13,7 @@ use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformFileRepositor
 use Semitexa\Platform\User\Domain\Service\FileStorageServiceInterface;
 use Semitexa\Storage\Contract\StorageDriverInterface;
 
-#[AsServiceContract(of: FileStorageServiceInterface::class)]
+#[SatisfiesServiceContract(of: FileStorageServiceInterface::class)]
 final class FileStorageService implements FileStorageServiceInterface
 {
     #[InjectAsReadonly]

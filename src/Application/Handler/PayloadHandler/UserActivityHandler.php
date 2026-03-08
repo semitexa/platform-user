@@ -13,7 +13,7 @@ use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserActivityPayload;
-use Semitexa\Platform\User\Domain\Service\UserActivityServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
 #[AsPayloadHandler(payload: UserActivityPayload::class, resource: GenericResponse::class)]
 final class UserActivityHandler implements HandlerInterface
@@ -22,7 +22,7 @@ final class UserActivityHandler implements HandlerInterface
     protected AuthContextInterface $auth;
 
     #[InjectAsReadonly]
-    protected UserActivityServiceInterface $activityService;
+    protected UserActivityRepositoryInterface $activityService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {

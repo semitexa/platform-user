@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Service;
 
-use Semitexa\Core\Attributes\AsServiceContract;
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\OrmManager;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\ProfileFieldResource;
 use Semitexa\Platform\User\Application\Db\MySQL\Repository\ProfileFieldRepository;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 
-#[AsServiceContract(of: ProfileFieldServiceInterface::class)]
-final class ProfileFieldService implements ProfileFieldServiceInterface
+#[SatisfiesRepositoryContract(of: ProfileFieldRepositoryInterface::class)]
+final class ProfileFieldService implements ProfileFieldRepositoryInterface
 {
     /** @return list<ProfileFieldResource> */
     public function findAll(): array

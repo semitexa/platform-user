@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Service;
 
-use Semitexa\Core\Attributes\AsServiceContract;
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\OrmManager;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\PlatformUserResource;
 use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 
-#[AsServiceContract(of: UserRepositoryInterface::class)]
+#[SatisfiesRepositoryContract(of: UserRepositoryInterface::class)]
 final class PlatformUserService implements UserRepositoryInterface
 {
     public function findById(string $id): ?PlatformUserResource

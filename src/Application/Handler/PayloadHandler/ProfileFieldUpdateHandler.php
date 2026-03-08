@@ -13,7 +13,7 @@ use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\ProfileFieldUpdatePayload;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 
 #[AsPayloadHandler(payload: ProfileFieldUpdatePayload::class, resource: GenericResponse::class)]
 final class ProfileFieldUpdateHandler implements HandlerInterface
@@ -22,7 +22,7 @@ final class ProfileFieldUpdateHandler implements HandlerInterface
     protected AuthContextInterface $auth;
 
     #[InjectAsReadonly]
-    protected ProfileFieldServiceInterface $profileFieldService;
+    protected ProfileFieldRepositoryInterface $profileFieldService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {

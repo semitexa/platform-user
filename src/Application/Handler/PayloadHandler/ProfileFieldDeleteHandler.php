@@ -13,8 +13,8 @@ use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\ProfileFieldDeletePayload;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileValueServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 
 #[AsPayloadHandler(payload: ProfileFieldDeletePayload::class, resource: GenericResponse::class)]
 final class ProfileFieldDeleteHandler implements HandlerInterface
@@ -23,10 +23,10 @@ final class ProfileFieldDeleteHandler implements HandlerInterface
     protected AuthContextInterface $auth;
 
     #[InjectAsReadonly]
-    protected ProfileFieldServiceInterface $profileFieldService;
+    protected ProfileFieldRepositoryInterface $profileFieldService;
 
     #[InjectAsReadonly]
-    protected ProfileValueServiceInterface $profileValueService;
+    protected ProfileValueRepositoryInterface $profileValueService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
