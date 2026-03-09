@@ -18,7 +18,12 @@ class PlatformUserProvider implements UserProviderInterface
 
     public function findById(string $id): ?AuthenticatableInterface
     {
-        $user = $this->userRepo->findById($id);
+        try {
+            $user = $this->userRepo->findById($id);
+        } catch (\Throwable $e) {
+            error_log('[PlatformUserProvider] Failed to load user ' . $id . ': ' . $e->getMessage());
+            return null;
+        }
 
         if ($user === null) {
             return null;
