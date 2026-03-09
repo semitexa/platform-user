@@ -6,11 +6,14 @@ namespace Semitexa\Platform\User\Application\Service;
 
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Attributes\SatisfiesServiceContract;
+use Semitexa\Orm\OrmManager;
 use Semitexa\Orm\Uuid\Uuid7;
-use Semitexa\Platform\User\Application\Db\MySQL\Model\RolePermissionResource;
-use Semitexa\Platform\User\Application\Db\MySQL\Model\UserRoleResource;
 use Semitexa\Platform\User\Domain\Model\Permission;
+use Semitexa\Platform\User\Domain\Model\RolePermission;
 use Semitexa\Platform\User\Domain\Model\Role;
+use Semitexa\Platform\User\Domain\Model\UserRole;
+use Semitexa\Platform\User\Application\Db\MySQL\Repository\RolePermissionRepository as DbRolePermissionRepository;
+use Semitexa\Platform\User\Application\Db\MySQL\Repository\UserRoleRepository as DbUserRoleRepository;
 use Semitexa\Platform\User\Domain\Repository\PermissionRepositoryInterface;
 use Semitexa\Platform\User\Domain\Repository\RolePermissionRepositoryInterface;
 use Semitexa\Platform\User\Domain\Repository\RoleRepositoryInterface;
@@ -38,7 +41,7 @@ final class RbacService implements RbacServiceInterface
         $userRoles = $this->userRoleRepo->findByUserId($userId);
         $roles = [];
         foreach ($userRoles as $ur) {
-            $role = $this->roleRepo->findById($ur->role_id);
+            $role = $this->roleRepo->findById($ur->roleId);
             if ($role !== null) {
                 $roles[] = $role->toDomain();
             }
@@ -53,19 +56,13 @@ final class RbacService implements RbacServiceInterface
         $permissionIds = [];
 
         foreach ($userRoles as $ur) {
-            $rolePerms = $this->rolePermRepo->findByRoleId($ur->role_id);
+            $rolePerms = $this->rolePermRepo->findByRoleId($ur->roleId);
             foreach ($rolePerms as $rp) {
-                $permissionIds[$rp->permission_id] = true;
+                $permissionIds[$rp->permissionId] = true;
             }
         }
 
-        $result = [];
-        foreach ($this->permRepo->findAll() as $perm) {
-            if (isset($permissionIds[$perm->id])) {
-                $result[] = $perm;
-            }
-        }
-        return $result;
+        return $this->permRepo->findByIds(array_keys($permissionIds));
     }
 
     public function userHasPermission(string $userId, string $permissionSlug): bool
@@ -81,15 +78,27 @@ final class RbacService implements RbacServiceInterface
 
     public function assignRole(string $userId, string $roleId): void
     {
-        $existing = $this->userRoleRepo->findByUserAndRole($userId, $roleId);
-        if ($existing !== null) {
-            return;
-        }
+        OrmManager::run(function (OrmManager $orm) use ($userId, $roleId): void {
+            $orm->getTransactionManager()->run(function ($adapter) use ($userId, $roleId): void {
+                $repo = new DbUserRoleRepository($adapter);
+                $existing = $repo->findByUserAndRole($userId, $roleId);
+                if ($existing !== null) {
+                    return;
+                }
 
-        $ur = new UserRoleResource();
-        $ur->user_id = strlen($userId) === 36 && str_contains($userId, '-') ? Uuid7::toBytes($userId) : $userId;
-        $ur->role_id = strlen($roleId) === 36 && str_contains($roleId, '-') ? Uuid7::toBytes($roleId) : $roleId;
-        $this->userRoleRepo->save($ur);
+                try {
+                    $repo->save(new UserRole(
+                        id: Uuid7::generate(),
+                        userId: $userId,
+                        roleId: $roleId,
+                    ));
+                } catch (\Throwable $e) {
+                    if (!$this->isDuplicateKey($e)) {
+                        throw $e;
+                    }
+                }
+            });
+        });
     }
 
     public function revokeRole(string $userId, string $roleId): void
@@ -106,30 +115,37 @@ final class RbacService implements RbacServiceInterface
         $rolePerms = $this->rolePermRepo->findByRoleId($roleId);
         $permissionIds = [];
         foreach ($rolePerms as $rp) {
-            $permissionIds[$rp->permission_id] = true;
+            $permissionIds[$rp->permissionId] = true;
         }
 
-        $result = [];
-        foreach ($this->permRepo->findAll() as $perm) {
-            if (isset($permissionIds[$perm->id])) {
-                $result[] = $perm;
-            }
-        }
-        return $result;
+        return $this->permRepo->findByIds(array_keys($permissionIds));
     }
 
     /** @param list<string> $permissionIds */
     public function setRolePermissions(string $roleId, array $permissionIds): void
     {
-        $this->rolePermRepo->deleteByRoleId($roleId);
+        OrmManager::run(function (OrmManager $orm) use ($roleId, $permissionIds): void {
+            $orm->getTransactionManager()->run(function ($adapter) use ($roleId, $permissionIds): void {
+                $repo = new DbRolePermissionRepository($adapter);
+                $repo->deleteByRoleId($roleId);
 
-        $roleIdBytes = strlen($roleId) === 36 && str_contains($roleId, '-') ? Uuid7::toBytes($roleId) : $roleId;
+                foreach ($permissionIds as $permId) {
+                    $repo->save(new RolePermission(
+                        id: Uuid7::generate(),
+                        roleId: $roleId,
+                        permissionId: $permId,
+                    ));
+                }
+            });
+        });
+    }
 
-        foreach ($permissionIds as $permId) {
-            $rp = new RolePermissionResource();
-            $rp->role_id = $roleIdBytes;
-            $rp->permission_id = strlen($permId) === 36 && str_contains($permId, '-') ? Uuid7::toBytes($permId) : $permId;
-            $this->rolePermRepo->save($rp);
-        }
+    private function isDuplicateKey(\Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'duplicate')
+            || str_contains($message, '1062')
+            || str_contains($message, '23000');
     }
 }

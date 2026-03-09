@@ -10,7 +10,7 @@ use Semitexa\Platform\User\Domain\Model\ProfileField;
 interface ProfileFieldRepositoryInterface
 {
     /** @return list<ProfileField> */
-    public function findAll(int $limit = 1000): array;
+    public function findAll(?int $limit = null): array;
 
     public function findById(string $id): ?ProfileFieldResource;
 

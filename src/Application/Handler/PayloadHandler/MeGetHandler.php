@@ -56,7 +56,7 @@ final class MeGetHandler implements HandlerInterface
 
         $user = $userResource->toDomain();
 
-        $profileFields = $this->profileFieldService->findAll();
+        $profileFields = $this->profileFieldService->findAll(null);
         $profileValues = $this->profileValueService->findByUserId($userId);
 
         $valuesByFieldId = [];

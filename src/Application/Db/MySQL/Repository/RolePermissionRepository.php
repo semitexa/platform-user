@@ -26,14 +26,11 @@ class RolePermissionRepository extends AbstractRepository implements RolePermiss
         return $id;
     }
 
-    /**
-     * @return list<RolePermissionResource>
-     */
     public function findByRoleId(string $roleId): array
     {
         return $this->select()
             ->where('role_id', '=', $this->normalizeUuid($roleId))
-            ->fetchAllAsResource();
+            ->fetchAll();
     }
 
     public function deleteByRoleId(string $roleId): void

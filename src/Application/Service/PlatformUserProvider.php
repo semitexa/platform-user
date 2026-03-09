@@ -21,7 +21,8 @@ class PlatformUserProvider implements UserProviderInterface
         try {
             $user = $this->userRepo->findById($id);
         } catch (\Throwable $e) {
-            error_log('[PlatformUserProvider] Failed to load user ' . $id . ': ' . $e->getMessage());
+            $redactedId = substr(hash('sha256', $id), 0, 12);
+            error_log('[PlatformUserProvider] Failed to load user [' . $redactedId . '] via ' . $e::class);
             return null;
         }
 

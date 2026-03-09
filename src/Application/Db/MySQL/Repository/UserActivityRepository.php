@@ -14,6 +14,9 @@ use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 #[SatisfiesRepositoryContract(of: UserActivityRepositoryInterface::class)]
 class UserActivityRepository extends AbstractRepository implements UserActivityRepositoryInterface
 {
+    private const IP_ADDRESS_MAX = 45;
+    private const USER_AGENT_MAX = 512;
+
     protected function getResourceClass(): string
     {
         return UserActivityResource::class;
@@ -50,9 +53,18 @@ class UserActivityRepository extends AbstractRepository implements UserActivityR
         $activity = new UserActivityResource();
         $activity->user_id = $this->normalizeUuid($userId);
         $activity->action = $action;
-        $activity->ip_address = $ipAddress;
-        $activity->user_agent = $userAgent;
+        $activity->ip_address = $this->truncate($ipAddress, self::IP_ADDRESS_MAX);
+        $activity->user_agent = $this->truncate($userAgent, self::USER_AGENT_MAX);
         $activity->created_at = new \DateTimeImmutable();
         $this->save($activity);
+    }
+
+    private function truncate(?string $value, int $maxLength): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return mb_substr($value, 0, $maxLength);
     }
 }

@@ -8,6 +8,7 @@ use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\Repository\AbstractRepository;
 use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\UserRoleResource;
+use Semitexa\Platform\User\Domain\Model\UserRole;
 use Semitexa\Platform\User\Domain\Repository\UserRoleRepositoryInterface;
 
 #[SatisfiesRepositoryContract(of: UserRoleRepositoryInterface::class)]
@@ -26,22 +27,19 @@ class UserRoleRepository extends AbstractRepository implements UserRoleRepositor
         return $id;
     }
 
-    /**
-     * @return list<UserRoleResource>
-     */
     public function findByUserId(string $userId): array
     {
         return $this->select()
             ->where('user_id', '=', $this->normalizeUuid($userId))
-            ->fetchAllAsResource();
+            ->fetchAll();
     }
 
-    public function findByUserAndRole(string $userId, string $roleId): ?UserRoleResource
+    public function findByUserAndRole(string $userId, string $roleId): ?UserRole
     {
         return $this->select()
             ->where('user_id', '=', $this->normalizeUuid($userId))
             ->where('role_id', '=', $this->normalizeUuid($roleId))
-            ->fetchOneAsResource();
+            ->fetchOne();
     }
 
     public function deleteByUserId(string $userId): void

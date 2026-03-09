@@ -7,7 +7,7 @@ namespace Semitexa\Platform\User\Application\Service;
 use Semitexa\Core\Attributes\SatisfiesServiceContract;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Orm\Uuid\Uuid7;
-use Semitexa\Platform\User\Application\Db\MySQL\Model\PlatformFileResource;
+use Semitexa\Platform\User\Domain\Model\PlatformFile;
 use Semitexa\Platform\User\Domain\Repository\PlatformFileRepositoryInterface;
 use Semitexa\Platform\User\Domain\Service\FileStorageServiceInterface;
 use Semitexa\Storage\Contract\StorageDriverInterface;
@@ -21,7 +21,7 @@ final class FileStorageService implements FileStorageServiceInterface
     #[InjectAsReadonly]
     protected PlatformFileRepositoryInterface $fileRepo;
 
-    public function upload(string $contents, string $originalName, string $mimeType, string $uploadedBy): PlatformFileResource
+    public function upload(string $contents, string $originalName, string $mimeType, string $uploadedBy): PlatformFile
     {
         $hash = hash('sha256', $contents);
         $ext = pathinfo($originalName, PATHINFO_EXTENSION) ?: 'bin';
@@ -31,32 +31,51 @@ final class FileStorageService implements FileStorageServiceInterface
 
         $this->storage->put($storagePath, $contents, $mimeType);
 
-        $file = new PlatformFileResource();
-        $file->id = $uuid;
-        $file->original_name = $originalName;
-        $file->mime_type = $mimeType;
-        $file->size = strlen($contents);
-        $file->storage_path = $storagePath;
-        $file->hash = $hash;
-        $file->uploaded_by = strlen($uploadedBy) === 36 && str_contains($uploadedBy, '-') ? Uuid7::toBytes($uploadedBy) : $uploadedBy;
-        $this->fileRepo->save($file);
+        $file = new PlatformFile(
+            id: $uuid,
+            originalName: $originalName,
+            mimeType: $mimeType,
+            size: strlen($contents),
+            storagePath: $storagePath,
+            hash: $hash,
+            uploadedBy: $uploadedBy,
+        );
+
+        try {
+            $this->fileRepo->save($file);
+        } catch (\Throwable $e) {
+            try {
+                $this->storage->delete($storagePath);
+            } catch (\Throwable) {
+            }
+            throw $e;
+        }
 
         return $file;
     }
 
-    public function findById(string $id): ?PlatformFileResource
+    public function findById(string $id): ?PlatformFile
     {
         return $this->fileRepo->findById($id);
     }
 
-    public function getContents(PlatformFileResource $file): ?string
+    public function getContents(PlatformFile $file): ?string
     {
-        return $this->storage->get($file->storage_path);
+        return $this->storage->get($file->storagePath);
     }
 
-    public function delete(PlatformFileResource $file): void
+    public function delete(PlatformFile $file): void
     {
-        $this->storage->delete($file->storage_path);
         $this->fileRepo->delete($file);
+
+        try {
+            $this->storage->delete($file->storagePath);
+        } catch (\Throwable $e) {
+            try {
+                $this->fileRepo->save($file);
+            } catch (\Throwable) {
+            }
+            throw $e;
+        }
     }
 }

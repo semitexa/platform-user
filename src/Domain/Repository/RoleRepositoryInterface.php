@@ -10,7 +10,7 @@ use Semitexa\Platform\User\Domain\Model\Role;
 interface RoleRepositoryInterface
 {
     /** Returns resource for mutation (save/delete). */
-    public function findById(string $id): ?RoleResource;
+    public function findById(int|string $id): ?RoleResource;
 
     /** @return list<Role> Domain objects for read-only listing. */
     public function findAll(int $limit = 100): array;

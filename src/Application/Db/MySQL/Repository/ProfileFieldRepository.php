@@ -28,9 +28,13 @@ class ProfileFieldRepository extends AbstractRepository implements ProfileFieldR
             ->fetchOneAsResource();
     }
 
-    public function findAll(int $limit = 1000): array
+    public function findAll(?int $limit = null): array
     {
-        return $this->select()->limit($limit)->fetchAll();
+        $query = $this->select();
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+        return $query->fetchAll();
     }
 
     public function findBySlug(string $slug): ?ProfileFieldResource

@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Domain\Repository;
 
-use Semitexa\Platform\User\Application\Db\MySQL\Model\UserRoleResource;
+use Semitexa\Platform\User\Domain\Model\UserRole;
 
 interface UserRoleRepositoryInterface
 {
-    /** @return list<UserRoleResource> */
+    /** @return list<UserRole> */
     public function findByUserId(string $userId): array;
 
-    public function findByUserAndRole(string $userId, string $roleId): ?UserRoleResource;
+    public function findByUserAndRole(string $userId, string $roleId): ?UserRole;
 
     public function deleteByUserId(string $userId): void;
 
-    public function save(UserRoleResource $resource): void;
+    public function save(UserRole $role): void;
 
-    public function delete(UserRoleResource $resource): void;
+    public function delete(UserRole $role): void;
 }

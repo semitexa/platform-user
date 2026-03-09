@@ -38,7 +38,14 @@ final class RoleCreateHandler implements HandlerInterface
         $role->description = $payload->getDescription();
         $role->is_system = false;
 
-        $this->roleRepo->save($role);
+        try {
+            $this->roleRepo->save($role);
+        } catch (\Throwable $e) {
+            if ($this->isDuplicateKey($e)) {
+                return Response::json(['error' => 'Role with this slug already exists'], 409);
+            }
+            throw $e;
+        }
 
         $domain = $role->toDomain();
 
@@ -51,5 +58,14 @@ final class RoleCreateHandler implements HandlerInterface
                 'is_system' => $domain->isSystem,
             ],
         ], 201);
+    }
+
+    private function isDuplicateKey(\Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'duplicate')
+            || str_contains($message, '1062')
+            || str_contains($message, '23000');
     }
 }
