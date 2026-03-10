@@ -48,7 +48,7 @@ final class FileServeHandler implements HandlerInterface
 
         return (new Response($contents, 200, [
             'Content-Type' => $file->mimeType,
-            'Content-Disposition' => 'inline; filename="' . $file->originalName . '"',
+            'Content-Disposition' => 'inline; filename="' . str_replace(['"', "\r", "\n"], '', $file->originalName) . '"',
             'Cache-Control' => 'private, max-age=86400',
         ]));
     }

@@ -36,10 +36,12 @@ class UserRoleRepository extends AbstractRepository implements UserRoleRepositor
 
     public function findByUserAndRole(string $userId, string $roleId): ?UserRole
     {
-        return $this->select()
+        $resource = $this->select()
             ->where('user_id', '=', $this->normalizeUuid($userId))
             ->where('role_id', '=', $this->normalizeUuid($roleId))
             ->fetchOne();
+
+        return $resource?->toDomain();
     }
 
     public function deleteByUserId(string $userId): void

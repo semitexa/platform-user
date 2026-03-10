@@ -19,12 +19,12 @@ class PermissionRepository extends AbstractRepository implements PermissionRepos
         return PermissionResource::class;
     }
 
+    private const DEFAULT_LIMIT = 1000;
+
     public function findAll(?int $limit = null): array
     {
         $query = $this->select();
-        if ($limit !== null) {
-            $query->limit($limit);
-        }
+        $query->limit($limit ?? self::DEFAULT_LIMIT);
         return $query->fetchAll();
     }
 
@@ -37,9 +37,11 @@ class PermissionRepository extends AbstractRepository implements PermissionRepos
 
     public function findBySlug(string $slug): ?Permission
     {
-        return $this->select()
+        $resource = $this->select()
             ->where('slug', '=', $slug)
             ->fetchOne();
+
+        return $resource?->toDomain();
     }
 
     public function findByIds(array $ids): array

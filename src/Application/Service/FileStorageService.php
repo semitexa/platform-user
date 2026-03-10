@@ -46,7 +46,8 @@ final class FileStorageService implements FileStorageServiceInterface
         } catch (\Throwable $e) {
             try {
                 $this->storage->delete($storagePath);
-            } catch (\Throwable) {
+            } catch (\Throwable $rollbackError) {
+                throw new \RuntimeException('Storage rollback failed after save error', 0, $e);
             }
             throw $e;
         }
@@ -73,7 +74,8 @@ final class FileStorageService implements FileStorageServiceInterface
         } catch (\Throwable $e) {
             try {
                 $this->fileRepo->save($file);
-            } catch (\Throwable) {
+            } catch (\Throwable $rollbackError) {
+                throw new \RuntimeException('DB rollback failed after storage delete error', 0, $e);
             }
             throw $e;
         }

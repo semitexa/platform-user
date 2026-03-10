@@ -40,7 +40,7 @@ body {
 
 /* Layout */
 .page-container {
-    padding: 0 16px !important;
+    padding: 0 16px;
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
