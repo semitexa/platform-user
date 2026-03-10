@@ -12,21 +12,17 @@ use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
-use Semitexa\Platform\User\Application\Payload\Request\ProfileFieldDeletePayload;
-use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
-use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
+use Semitexa\Platform\User\Application\Payload\Request\UnlockPayload;
+use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 
-#[AsPayloadHandler(payload: ProfileFieldDeletePayload::class, resource: GenericResponse::class)]
-final class ProfileFieldDeleteHandler implements HandlerInterface
+#[AsPayloadHandler(payload: UnlockPayload::class, resource: GenericResponse::class)]
+final class UnlockHandler implements HandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
 
     #[InjectAsReadonly]
-    protected ProfileFieldRepositoryInterface $profileFieldService;
-
-    #[InjectAsReadonly]
-    protected ProfileValueRepositoryInterface $profileValueService;
+    protected UserRepositoryInterface $userRepo;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
@@ -34,18 +30,18 @@ final class ProfileFieldDeleteHandler implements HandlerInterface
             return Response::json(['error' => 'Unauthorized'], 401);
         }
 
-        if (!$payload instanceof ProfileFieldDeletePayload) {
+        if (!$payload instanceof UnlockPayload) {
             return Response::json(['error' => 'Invalid payload'], 400);
         }
 
-        $field = $this->profileFieldService->findById($payload->id);
-
-        if ($field === null) {
-            return Response::json(['error' => 'Profile field not found'], 404);
+        $userResource = $this->userRepo->findById($this->auth->getUser()->getId());
+        if ($userResource === null || !$userResource->is_active) {
+            return Response::json(['error' => 'Unauthorized'], 401);
         }
 
-        $this->profileValueService->deleteByFieldId($payload->id);
-        $this->profileFieldService->delete($field);
+        if (!password_verify($payload->getPassword(), $userResource->password_hash)) {
+            return Response::json(['error' => 'Invalid credentials'], 401);
+        }
 
         return Response::json(['success' => true]);
     }

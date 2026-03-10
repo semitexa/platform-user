@@ -34,21 +34,25 @@ final class FileServeHandler implements HandlerInterface
             return Response::json(['error' => 'Invalid payload'], 400);
         }
 
-        $fileResource = $this->fileStorageService->findById($payload->id);
+        $file = $this->fileStorageService->findById($payload->id);
 
-        if ($fileResource === null) {
+        if ($file === null) {
             return Response::json(['error' => 'File not found'], 404);
         }
 
-        $contents = $this->fileStorageService->getContents($fileResource);
+        if ($file->uploadedBy !== $this->auth->getUser()->getId()) {
+            return Response::json(['error' => 'Forbidden'], 403);
+        }
+
+        $contents = $this->fileStorageService->getContents($file);
 
         if ($contents === null) {
             return Response::json(['error' => 'File contents unavailable'], 404);
         }
 
         return (new Response($contents, 200, [
-            'Content-Type' => $fileResource->mime_type,
-            'Content-Disposition' => 'inline; filename="' . $fileResource->original_name . '"',
+            'Content-Type' => $file->mimeType,
+            'Content-Disposition' => 'inline; filename="' . str_replace(['"', "\r", "\n"], '', $file->originalName) . '"',
             'Cache-Control' => 'private, max-age=86400',
         ]));
     }

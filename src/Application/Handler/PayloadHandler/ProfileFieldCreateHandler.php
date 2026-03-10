@@ -14,7 +14,7 @@ use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\ProfileFieldResource;
 use Semitexa\Platform\User\Application\Payload\Request\ProfileFieldCreatePayload;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 
 #[AsPayloadHandler(payload: ProfileFieldCreatePayload::class, resource: GenericResponse::class)]
 final class ProfileFieldCreateHandler implements HandlerInterface
@@ -23,7 +23,7 @@ final class ProfileFieldCreateHandler implements HandlerInterface
     protected AuthContextInterface $auth;
 
     #[InjectAsReadonly]
-    protected ProfileFieldServiceInterface $profileFieldService;
+    protected ProfileFieldRepositoryInterface $profileFieldService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {

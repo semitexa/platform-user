@@ -5,33 +5,30 @@ declare(strict_types=1);
 namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 
 use Semitexa\Core\Attributes\AsPayloadHandler;
+use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Contract\HandlerInterface;
 use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
-use Semitexa\Orm\OrmManager;
-use Semitexa\Platform\User\Application\Db\MySQL\Repository\PermissionRepository;
 use Semitexa\Platform\User\Application\Payload\Request\PermissionListPayload;
+use Semitexa\Platform\User\Domain\Repository\PermissionRepositoryInterface;
 
 #[AsPayloadHandler(payload: PermissionListPayload::class, resource: GenericResponse::class)]
 final class PermissionListHandler implements HandlerInterface
 {
+    #[InjectAsReadonly]
+    protected PermissionRepositoryInterface $permRepo;
+
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
-        $permResources = OrmManager::run(function (OrmManager $orm) {
-            $repo = new PermissionRepository($orm->getAdapter());
-            return $repo->findAll();
-        });
-
         $permissions = [];
-        foreach ($permResources as $r) {
-            $domain = $r->toDomain();
+        foreach ($this->permRepo->findAll() as $perm) {
             $permissions[] = [
-                'id' => $domain->id,
-                'slug' => $domain->slug,
-                'name' => $domain->name,
-                'group_key' => $domain->groupKey,
+                'id' => $perm->id,
+                'slug' => $perm->slug,
+                'name' => $perm->name,
+                'group_key' => $perm->groupKey,
             ];
         }
 

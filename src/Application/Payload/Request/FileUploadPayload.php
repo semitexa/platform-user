@@ -11,8 +11,15 @@ use Semitexa\Core\Contract\ValidatablePayload;
 use Semitexa\Core\Http\PayloadValidationResult;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Validation\Trait\NotBlankValidationTrait;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 
-#[AsPayload(path: '/api/platform/files', methods: ['POST'], responseWith: GenericResponse::class)]
+#[AsPayload(
+    responseWith: GenericResponse::class,
+    path: '/api/platform/files',
+    methods: ['POST']
+)]
+#[TestablePayload(strategies: [ParanoiaProfileStrategy::class])]
 #[RequiresAuth]
 class FileUploadPayload implements PayloadInterface, ValidatablePayload
 {

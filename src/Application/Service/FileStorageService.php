@@ -4,22 +4,24 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Service;
 
-use Semitexa\Core\Attributes\AsServiceContract;
+use Semitexa\Core\Attributes\SatisfiesServiceContract;
 use Semitexa\Core\Attributes\InjectAsReadonly;
-use Semitexa\Orm\OrmManager;
 use Semitexa\Orm\Uuid\Uuid7;
-use Semitexa\Platform\User\Application\Db\MySQL\Model\PlatformFileResource;
-use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformFileRepository;
+use Semitexa\Platform\User\Domain\Model\PlatformFile;
+use Semitexa\Platform\User\Domain\Repository\PlatformFileRepositoryInterface;
 use Semitexa\Platform\User\Domain\Service\FileStorageServiceInterface;
 use Semitexa\Storage\Contract\StorageDriverInterface;
 
-#[AsServiceContract(of: FileStorageServiceInterface::class)]
+#[SatisfiesServiceContract(of: FileStorageServiceInterface::class)]
 final class FileStorageService implements FileStorageServiceInterface
 {
     #[InjectAsReadonly]
     protected StorageDriverInterface $storage;
 
-    public function upload(string $contents, string $originalName, string $mimeType, string $uploadedBy): PlatformFileResource
+    #[InjectAsReadonly]
+    protected PlatformFileRepositoryInterface $fileRepo;
+
+    public function upload(string $contents, string $originalName, string $mimeType, string $uploadedBy): PlatformFile
     {
         $hash = hash('sha256', $contents);
         $ext = pathinfo($originalName, PATHINFO_EXTENSION) ?: 'bin';
@@ -29,40 +31,53 @@ final class FileStorageService implements FileStorageServiceInterface
 
         $this->storage->put($storagePath, $contents, $mimeType);
 
-        return OrmManager::run(function (OrmManager $orm) use ($uuid, $originalName, $mimeType, $contents, $storagePath, $hash, $uploadedBy) {
-            $repo = new PlatformFileRepository($orm->getAdapter());
-            $file = new PlatformFileResource();
-            $file->id = $uuid;
-            $file->original_name = $originalName;
-            $file->mime_type = $mimeType;
-            $file->size = strlen($contents);
-            $file->storage_path = $storagePath;
-            $file->hash = $hash;
-            $file->uploaded_by = strlen($uploadedBy) === 36 && str_contains($uploadedBy, '-') ? Uuid7::toBytes($uploadedBy) : $uploadedBy;
-            $repo->save($file);
-            return $file;
-        });
+        $file = new PlatformFile(
+            id: $uuid,
+            originalName: $originalName,
+            mimeType: $mimeType,
+            size: strlen($contents),
+            storagePath: $storagePath,
+            hash: $hash,
+            uploadedBy: $uploadedBy,
+        );
+
+        try {
+            $this->fileRepo->save($file);
+        } catch (\Throwable $e) {
+            try {
+                $this->storage->delete($storagePath);
+            } catch (\Throwable $rollbackError) {
+                throw new \RuntimeException('Storage rollback failed after save error', 0, $e);
+            }
+            throw $e;
+        }
+
+        return $file;
     }
 
-    public function findById(string $id): ?PlatformFileResource
+    public function findById(string $id): ?PlatformFile
     {
-        return OrmManager::run(function (OrmManager $orm) use ($id) {
-            $repo = new PlatformFileRepository($orm->getAdapter());
-            return $repo->findById($id);
-        });
+        return $this->fileRepo->findById($id);
     }
 
-    public function getContents(PlatformFileResource $file): ?string
+    public function getContents(PlatformFile $file): ?string
     {
-        return $this->storage->get($file->storage_path);
+        return $this->storage->get($file->storagePath);
     }
 
-    public function delete(PlatformFileResource $file): void
+    public function delete(PlatformFile $file): void
     {
-        $this->storage->delete($file->storage_path);
-        OrmManager::run(function (OrmManager $orm) use ($file) {
-            $repo = new PlatformFileRepository($orm->getAdapter());
-            $repo->delete($file);
-        });
+        $this->fileRepo->delete($file);
+
+        try {
+            $this->storage->delete($file->storagePath);
+        } catch (\Throwable $e) {
+            try {
+                $this->fileRepo->save($file);
+            } catch (\Throwable $rollbackError) {
+                throw new \RuntimeException('DB rollback failed after storage delete error', 0, $e);
+            }
+            throw $e;
+        }
     }
 }

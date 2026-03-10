@@ -14,10 +14,10 @@ use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\MeGetPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileValueServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
-use Semitexa\Platform\User\Domain\Service\UserActivityServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
 #[AsPayloadHandler(payload: MeGetPayload::class, resource: GenericResponse::class)]
 final class MeGetHandler implements HandlerInterface
@@ -29,16 +29,16 @@ final class MeGetHandler implements HandlerInterface
     protected UserRepositoryInterface $userRepo;
 
     #[InjectAsReadonly]
-    protected ProfileFieldServiceInterface $profileFieldService;
+    protected ProfileFieldRepositoryInterface $profileFieldService;
 
     #[InjectAsReadonly]
-    protected ProfileValueServiceInterface $profileValueService;
+    protected ProfileValueRepositoryInterface $profileValueService;
 
     #[InjectAsReadonly]
     protected RbacServiceInterface $rbacService;
 
     #[InjectAsReadonly]
-    protected UserActivityServiceInterface $activityService;
+    protected UserActivityRepositoryInterface $activityService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
@@ -56,21 +56,19 @@ final class MeGetHandler implements HandlerInterface
 
         $user = $userResource->toDomain();
 
-        $fieldResources = $this->profileFieldService->findAll();
-        $valueResources = $this->profileValueService->findByUserId($userId);
+        $profileFields = $this->profileFieldService->findAll(null);
+        $profileValues = $this->profileValueService->findByUserId($userId);
 
         $valuesByFieldId = [];
-        foreach ($valueResources as $v) {
-            $vDomain = $v->toDomain();
-            $valuesByFieldId[$vDomain->fieldId] = $vDomain;
+        foreach ($profileValues as $v) {
+            $valuesByFieldId[$v->fieldId] = $v;
         }
 
         $fields = [];
         $requiredCount = 0;
         $filledRequired = 0;
 
-        foreach ($fieldResources as $fr) {
-            $fd = $fr->toDomain();
+        foreach ($profileFields as $fd) {
             $value = $valuesByFieldId[$fd->id] ?? null;
 
             $fields[] = [
@@ -111,7 +109,7 @@ final class MeGetHandler implements HandlerInterface
             'fields' => $fields,
             'roles' => $roles,
             'profile_completeness' => $completeness,
-            'last_login' => $lastLogin?->toDomain()->createdAt?->format(\DateTimeInterface::ATOM),
+            'last_login' => $lastLogin?->createdAt?->format(\DateTimeInterface::ATOM),
         ]);
     }
 }

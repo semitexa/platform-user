@@ -9,6 +9,8 @@ use Semitexa\Core\Attributes\RequiresAuth;
 use Semitexa\Core\Attributes\RequiresPermission;
 use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 
 #[AsPayload(
     responseWith: GenericResponse::class,
@@ -16,6 +18,7 @@ use Semitexa\Core\Http\Response\GenericResponse;
     methods: ['DELETE'],
     requirements: ['id' => '[a-f0-9\\-]{36}'])
 ]
+#[TestablePayload(strategies: [ParanoiaProfileStrategy::class])]
 #[RequiresAuth]
 #[RequiresPermission('profile-fields.manage')]
 class ProfileFieldDeletePayload implements PayloadInterface

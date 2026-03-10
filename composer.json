@@ -15,6 +15,7 @@
         "semitexa/auth": "*",
         "semitexa/orm": "*",
         "semitexa/ssr": "*",
+        "semitexa/testing": "*",
         "semitexa/storage": "*",
         "semitexa/platform-wm": "*"
     },

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Db\MySQL\Repository;
 
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\Repository\AbstractRepository;
+use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\PlatformUserResource;
+use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 
-class PlatformUserRepository extends AbstractRepository
+#[SatisfiesRepositoryContract(of: UserRepositoryInterface::class)]
+class PlatformUserRepository extends AbstractRepository implements UserRepositoryInterface
 {
     protected function getResourceClass(): string
     {
@@ -17,7 +21,7 @@ class PlatformUserRepository extends AbstractRepository
     public function findById(int|string $id): ?PlatformUserResource
     {
         if (is_string($id) && strlen($id) === 36 && str_contains($id, '-')) {
-            $id = \Semitexa\Orm\Uuid\Uuid7::toBytes($id);
+            $id = Uuid7::toBytes($id);
         }
         return $this->select()
             ->where($this->getPkColumn(), '=', $id)
@@ -26,7 +30,6 @@ class PlatformUserRepository extends AbstractRepository
 
     public function findByEmail(string $email): ?PlatformUserResource
     {
-        /** @var PlatformUserResource|null */
         return $this->select()
             ->where('email', '=', $email)
             ->fetchOneAsResource();
@@ -34,34 +37,15 @@ class PlatformUserRepository extends AbstractRepository
 
     public function findAll(int $limit = 100): array
     {
-        $sql = $this->select()->limit($limit)->buildSql();
-        $adapter = $this->getAdapter();
-        $rows = $adapter->execute($sql, [])->rows;
-
-        $hydrator = new \Semitexa\Orm\Hydration\Hydrator();
-        $resources = [];
-        foreach ($rows as $row) {
-            $resources[] = $hydrator->hydrate($row, PlatformUserResource::class);
-        }
-        return $resources;
+        return $this->select()->limit($limit)->fetchAll();
     }
 
-    /**
-     * @return list<PlatformUserResource>
-     */
     public function search(string $term, int $limit = 50): array
     {
-        $like = '%' . $term . '%';
-        $table = $this->getTableName();
-        $sql = "SELECT * FROM `{$table}` WHERE (`name` LIKE ? OR `email` LIKE ?) LIMIT {$limit}";
-        $adapter = $this->getAdapter();
-        $rows = $adapter->execute($sql, [$like, $like])->rows;
-
-        $hydrator = new \Semitexa\Orm\Hydration\Hydrator();
-        $resources = [];
-        foreach ($rows as $row) {
-            $resources[] = $hydrator->hydrate($row, PlatformUserResource::class);
-        }
-        return $resources;
+        return $this->select()
+            ->whereLike('name', "%{$term}%")
+            ->orWhere('email', 'LIKE', "%{$term}%")
+            ->limit($limit)
+            ->fetchAll();
     }
 }

@@ -8,8 +8,15 @@ use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Attributes\RequiresAuth;
 use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 
-#[AsPayload(path: '/api/platform/users/me/profile', methods: ['PATCH'], responseWith: GenericResponse::class)]
+#[AsPayload(
+    responseWith: GenericResponse::class,
+    path: '/api/platform/users/me/profile',
+    methods: ['PATCH']
+)]
+#[TestablePayload(strategies: [ParanoiaProfileStrategy::class])]
 #[RequiresAuth]
 class MeProfileUpdatePayload implements PayloadInterface
 {

@@ -11,6 +11,7 @@ use Semitexa\Orm\Attribute\TenantScoped;
 use Semitexa\Orm\Contract\DomainMappable;
 use Semitexa\Orm\Trait\HasTimestamps;
 use Semitexa\Orm\Trait\HasUuidV7;
+use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Orm\Trait\SoftDeletes;
 use Semitexa\Platform\User\Domain\Model\PlatformFile;
 
@@ -60,13 +61,22 @@ class PlatformFileResource implements DomainMappable
     {
         assert($entity instanceof PlatformFile);
         $r = new static();
-        $r->id = $entity->id;
+        $r->id = self::normalizeUuid($entity->id);
         $r->original_name = $entity->originalName;
         $r->mime_type = $entity->mimeType;
         $r->size = $entity->size;
         $r->storage_path = $entity->storagePath;
         $r->hash = $entity->hash;
-        $r->uploaded_by = $entity->uploadedBy;
+        $r->uploaded_by = self::normalizeUuid($entity->uploadedBy);
         return $r;
+    }
+
+    private static function normalizeUuid(string $value): string
+    {
+        if (strlen($value) === 36 && str_contains($value, '-')) {
+            return Uuid7::toBytes($value);
+        }
+
+        return $value;
     }
 }

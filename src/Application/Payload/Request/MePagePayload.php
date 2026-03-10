@@ -8,8 +8,15 @@ use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Attributes\RequiresAuth;
 use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Ssr\Http\Response\HtmlResponse;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
 
-#[AsPayload(path: '/platform/users/me', methods: ['GET'], responseWith: HtmlResponse::class)]
+#[AsPayload(
+    responseWith: HtmlResponse::class,
+    path: '/platform/users/me',
+    methods: ['GET']
+)]
+#[TestablePayload(strategies: [StandardProfileStrategy::class])]
 #[RequiresAuth]
 class MePagePayload implements PayloadInterface
 {

@@ -13,7 +13,7 @@ use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\ProfileFieldListPayload;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 
 #[AsPayloadHandler(payload: ProfileFieldListPayload::class, resource: GenericResponse::class)]
 final class ProfileFieldListHandler implements HandlerInterface
@@ -22,7 +22,7 @@ final class ProfileFieldListHandler implements HandlerInterface
     protected AuthContextInterface $auth;
 
     #[InjectAsReadonly]
-    protected ProfileFieldServiceInterface $profileFieldService;
+    protected ProfileFieldRepositoryInterface $profileFieldService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
@@ -30,21 +30,18 @@ final class ProfileFieldListHandler implements HandlerInterface
             return Response::json(['error' => 'Unauthorized'], 401);
         }
 
-        $resources = $this->profileFieldService->findAll();
-
         $fields = [];
-        foreach ($resources as $r) {
-            $domain = $r->toDomain();
+        foreach ($this->profileFieldService->findAll() as $field) {
             $fields[] = [
-                'id' => $domain->id,
-                'slug' => $domain->slug,
-                'label' => $domain->label,
-                'type' => $domain->type,
-                'is_required' => $domain->isRequired,
-                'sort_order' => $domain->sortOrder,
-                'options' => $domain->options,
-                'is_visible' => $domain->isVisible,
-                'icon' => $domain->icon,
+                'id' => $field->id,
+                'slug' => $field->slug,
+                'label' => $field->label,
+                'type' => $field->type,
+                'is_required' => $field->isRequired,
+                'sort_order' => $field->sortOrder,
+                'options' => $field->options,
+                'is_visible' => $field->isVisible,
+                'icon' => $field->icon,
             ];
         }
 

@@ -16,7 +16,7 @@ use Semitexa\Core\Response;
 use Semitexa\Core\Session\SessionInterface;
 use Semitexa\Platform\User\Application\Payload\Request\LoginPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
-use Semitexa\Platform\User\Domain\Service\UserActivityServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
 #[AsPayloadHandler(payload: LoginPayload::class, resource: GenericResponse::class)]
 final class LoginHandler implements HandlerInterface
@@ -28,7 +28,7 @@ final class LoginHandler implements HandlerInterface
     protected UserRepositoryInterface $userRepo;
 
     #[InjectAsReadonly]
-    protected ?UserActivityServiceInterface $activityService = null;
+    protected ?UserActivityRepositoryInterface $activityService = null;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {

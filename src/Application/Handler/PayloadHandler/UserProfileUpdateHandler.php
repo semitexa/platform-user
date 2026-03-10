@@ -15,8 +15,8 @@ use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\ProfileValueResource;
 use Semitexa\Platform\User\Application\Payload\Request\UserProfileUpdatePayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileValueServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 
 #[AsPayloadHandler(payload: UserProfileUpdatePayload::class, resource: GenericResponse::class)]
 final class UserProfileUpdateHandler implements HandlerInterface
@@ -28,10 +28,10 @@ final class UserProfileUpdateHandler implements HandlerInterface
     protected UserRepositoryInterface $userRepo;
 
     #[InjectAsReadonly]
-    protected ProfileFieldServiceInterface $profileFieldService;
+    protected ProfileFieldRepositoryInterface $profileFieldService;
 
     #[InjectAsReadonly]
-    protected ProfileValueServiceInterface $profileValueService;
+    protected ProfileValueRepositoryInterface $profileValueService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {

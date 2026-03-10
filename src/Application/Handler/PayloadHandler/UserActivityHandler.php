@@ -13,7 +13,7 @@ use Semitexa\Core\Contract\ResourceInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserActivityPayload;
-use Semitexa\Platform\User\Domain\Service\UserActivityServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
 #[AsPayloadHandler(payload: UserActivityPayload::class, resource: GenericResponse::class)]
 final class UserActivityHandler implements HandlerInterface
@@ -22,7 +22,7 @@ final class UserActivityHandler implements HandlerInterface
     protected AuthContextInterface $auth;
 
     #[InjectAsReadonly]
-    protected UserActivityServiceInterface $activityService;
+    protected UserActivityRepositoryInterface $activityService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
@@ -34,17 +34,14 @@ final class UserActivityHandler implements HandlerInterface
             return Response::json(['error' => 'Invalid payload'], 400);
         }
 
-        $resources = $this->activityService->findByUserId($payload->id);
-
         $activity = [];
-        foreach ($resources as $r) {
-            $domain = $r->toDomain();
+        foreach ($this->activityService->findByUserId($payload->id) as $a) {
             $activity[] = [
-                'id' => $domain->id,
-                'action' => $domain->action,
-                'ip_address' => $domain->ipAddress,
-                'user_agent' => $domain->userAgent,
-                'created_at' => $domain->createdAt?->format(\DateTimeInterface::ATOM),
+                'id' => $a->id,
+                'action' => $a->action,
+                'ip_address' => $a->ipAddress,
+                'user_agent' => $a->userAgent,
+                'created_at' => $a->createdAt?->format(\DateTimeInterface::ATOM),
             ];
         }
 

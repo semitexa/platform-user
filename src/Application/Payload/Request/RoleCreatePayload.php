@@ -12,8 +12,11 @@ use Semitexa\Core\Contract\ValidatablePayload;
 use Semitexa\Core\Http\PayloadValidationResult;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Validation\Trait\NotBlankValidationTrait;
+use Semitexa\Testing\Attributes\TestablePayload;
+use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 
 #[AsPayload(path: '/api/platform/roles', methods: ['POST'], responseWith: GenericResponse::class)]
+#[TestablePayload(strategies: [ParanoiaProfileStrategy::class])]
 #[RequiresAuth]
 #[RequiresPermission('roles.manage')]
 class RoleCreatePayload implements PayloadInterface, ValidatablePayload

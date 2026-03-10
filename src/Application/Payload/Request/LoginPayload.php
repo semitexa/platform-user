@@ -12,7 +12,7 @@ use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Validation\Trait\EmailValidationTrait;
 use Semitexa\Core\Validation\Trait\NotBlankValidationTrait;
 use Semitexa\Testing\Attributes\TestablePayload;
-use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
+use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 use App\Tests\Strategy\LoginEmailFormatStrategy;
 
 // Public endpoint — no #[RequiresAuth]. SecurityStrategy skips automatically.
@@ -23,7 +23,7 @@ use App\Tests\Strategy\LoginEmailFormatStrategy;
 ]
 #[TestablePayload(
     strategies: [
-        StandardProfileStrategy::class,    // HttpMethodStrategy + TypeEnforcementStrategy
+        ParanoiaProfileStrategy::class,    // Standard (Auth, Method, Type) + Monkey + MemoryLeak
         LoginEmailFormatStrategy::class,   // Custom: email format + blank fields → 422
     ]
 )]

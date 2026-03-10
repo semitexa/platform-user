@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Semitexa\Platform\User\Domain\Repository;
+
+use Semitexa\Platform\User\Application\Db\MySQL\Model\RoleResource;
+use Semitexa\Platform\User\Domain\Model\Role;
+
+interface RoleRepositoryInterface
+{
+    /** Returns resource for mutation (save/delete). */
+    public function findById(int|string $id): ?RoleResource;
+
+    /** @return list<Role> Domain objects for read-only listing. */
+    public function findAll(int $limit = 100): array;
+
+    /** Returns resource for mutation (save/delete). */
+    public function findBySlug(string $slug): ?RoleResource;
+
+    public function save(RoleResource $resource): void;
+
+    public function delete(RoleResource $resource): void;
+}

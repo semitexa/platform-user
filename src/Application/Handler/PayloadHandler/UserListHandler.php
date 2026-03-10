@@ -14,10 +14,10 @@ use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserListPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileFieldServiceInterface;
-use Semitexa\Platform\User\Domain\Service\ProfileValueServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
+use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
-use Semitexa\Platform\User\Domain\Service\UserActivityServiceInterface;
+use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
 #[AsPayloadHandler(payload: UserListPayload::class, resource: GenericResponse::class)]
 final class UserListHandler implements HandlerInterface
@@ -32,13 +32,13 @@ final class UserListHandler implements HandlerInterface
     protected RbacServiceInterface $rbacService;
 
     #[InjectAsReadonly]
-    protected UserActivityServiceInterface $activityService;
+    protected UserActivityRepositoryInterface $activityService;
 
     #[InjectAsReadonly]
-    protected ProfileFieldServiceInterface $profileFieldService;
+    protected ProfileFieldRepositoryInterface $profileFieldService;
 
     #[InjectAsReadonly]
-    protected ProfileValueServiceInterface $profileValueService;
+    protected ProfileValueRepositoryInterface $profileValueService;
 
     public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
     {
@@ -58,12 +58,11 @@ final class UserListHandler implements HandlerInterface
             $resources = $this->userRepo->findAll($payload->getLimit());
         }
 
-        $fieldResources = $this->profileFieldService->findAll();
+        $profileFields = $this->profileFieldService->findAll();
         $requiredFieldIds = [];
         $avatarFieldId = null;
 
-        foreach ($fieldResources as $fr) {
-            $fd = $fr->toDomain();
+        foreach ($profileFields as $fd) {
             if ($fd->isRequired) {
                 $requiredFieldIds[] = $fd->id;
             }
@@ -73,9 +72,8 @@ final class UserListHandler implements HandlerInterface
         }
 
         $users = [];
-        foreach ($resources as $r) {
-            $domain = $r->toDomain();
-            $userId = $domain->id;
+        foreach ($resources as $user) {
+            $userId = $user->id;
 
             $avatarUrl = null;
             if ($avatarFieldId !== null) {
@@ -87,11 +85,10 @@ final class UserListHandler implements HandlerInterface
 
             $lastLogin = $this->activityService->getLastLoginForUser($userId);
 
-            $valueResources = $this->profileValueService->findByUserId($userId);
+            $profileValues = $this->profileValueService->findByUserId($userId);
             $filledRequired = 0;
-            foreach ($valueResources as $v) {
-                $vDomain = $v->toDomain();
-                if (in_array($vDomain->fieldId, $requiredFieldIds, true) && ($vDomain->value !== null || $vDomain->fileId !== null)) {
+            foreach ($profileValues as $v) {
+                if (in_array($v->fieldId, $requiredFieldIds, true) && ($v->value !== null || $v->fileId !== null)) {
                     $filledRequired++;
                 }
             }
@@ -110,12 +107,12 @@ final class UserListHandler implements HandlerInterface
             }
 
             $users[] = [
-                'id' => $domain->id,
-                'email' => $domain->email,
-                'name' => $domain->name,
-                'is_active' => $domain->isActive,
+                'id' => $user->id,
+                'email' => $user->email,
+                'name' => $user->name,
+                'is_active' => $user->isActive,
                 'avatar_url' => $avatarUrl,
-                'last_login' => $lastLogin?->toDomain()->createdAt?->format(\DateTimeInterface::ATOM),
+                'last_login' => $lastLogin?->createdAt?->format(\DateTimeInterface::ATOM),
                 'profile_completeness' => $completeness,
                 'roles' => $roles,
             ];

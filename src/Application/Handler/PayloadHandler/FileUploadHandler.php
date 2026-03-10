@@ -42,22 +42,20 @@ final class FileUploadHandler implements HandlerInterface
 
         $userId = $this->auth->getUser()->getId();
 
-        $fileResource = $this->fileStorageService->upload(
+        $file = $this->fileStorageService->upload(
             $contents,
             $payload->getName(),
             $payload->getMimeType(),
             $userId,
         );
 
-        $domain = $fileResource->toDomain();
-
         return Response::json([
             'file' => [
-                'id' => $domain->id,
-                'original_name' => $domain->originalName,
-                'mime_type' => $domain->mimeType,
-                'size' => $domain->size,
-                'url' => '/api/platform/files/' . $domain->id,
+                'id' => $file->id,
+                'original_name' => $file->originalName,
+                'mime_type' => $file->mimeType,
+                'size' => $file->size,
+                'url' => '/api/platform/files/' . $file->id,
             ],
         ], 201);
     }

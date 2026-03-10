@@ -4,56 +4,62 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Db\MySQL\Repository;
 
-use Semitexa\Orm\Hydration\Hydrator;
+use Semitexa\Core\Attributes\SatisfiesRepositoryContract;
 use Semitexa\Orm\Repository\AbstractRepository;
+use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\PermissionResource;
+use Semitexa\Platform\User\Domain\Model\Permission;
+use Semitexa\Platform\User\Domain\Repository\PermissionRepositoryInterface;
 
-class PermissionRepository extends AbstractRepository
+#[SatisfiesRepositoryContract(of: PermissionRepositoryInterface::class)]
+class PermissionRepository extends AbstractRepository implements PermissionRepositoryInterface
 {
     protected function getResourceClass(): string
     {
         return PermissionResource::class;
     }
 
-    /**
-     * @return list<PermissionResource>
-     */
-    public function findAll(int $limit = 1000): array
-    {
-        $sql = $this->select()->limit($limit)->buildSql();
-        $rows = $this->getAdapter()->execute($sql, [])->rows;
+    private const DEFAULT_LIMIT = 1000;
 
-        $hydrator = new Hydrator();
-        $resources = [];
-        foreach ($rows as $row) {
-            $resources[] = $hydrator->hydrate($row, PermissionResource::class);
-        }
-        return $resources;
+    public function findAll(?int $limit = null): array
+    {
+        $query = $this->select();
+        $query->limit($limit ?? self::DEFAULT_LIMIT);
+        return $query->fetchAll();
     }
 
-    /**
-     * @return list<PermissionResource>
-     */
     public function findByGroup(string $groupKey): array
     {
-        $table = $this->getTableName();
-        $rows = $this->getAdapter()->execute(
-            "SELECT * FROM `{$table}` WHERE `group_key` = ?",
-            [$groupKey],
-        )->rows;
-
-        $hydrator = new Hydrator();
-        $resources = [];
-        foreach ($rows as $row) {
-            $resources[] = $hydrator->hydrate($row, PermissionResource::class);
-        }
-        return $resources;
+        return $this->select()
+            ->where('group_key', '=', $groupKey)
+            ->fetchAll();
     }
 
-    public function findBySlug(string $slug): ?PermissionResource
+    public function findBySlug(string $slug): ?Permission
     {
-        return $this->select()
+        $resource = $this->select()
             ->where('slug', '=', $slug)
-            ->fetchOneAsResource();
+            ->fetchOne();
+
+        return $resource?->toDomain();
+    }
+
+    public function findByIds(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $normalized = array_values(array_unique(array_map(static function (string $id): string {
+            if (strlen($id) === 36 && str_contains($id, '-')) {
+                return Uuid7::toBytes($id);
+            }
+
+            return $id;
+        }, $ids)));
+
+        return $this->select()
+            ->whereIn('id', $normalized)
+            ->fetchAll();
     }
 }
