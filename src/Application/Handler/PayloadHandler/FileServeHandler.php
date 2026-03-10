@@ -40,6 +40,10 @@ final class FileServeHandler implements HandlerInterface
             return Response::json(['error' => 'File not found'], 404);
         }
 
+        if ($file->uploadedBy !== $this->auth->getUser()->getId()) {
+            return Response::json(['error' => 'Forbidden'], 403);
+        }
+
         $contents = $this->fileStorageService->getContents($file);
 
         if ($contents === null) {
