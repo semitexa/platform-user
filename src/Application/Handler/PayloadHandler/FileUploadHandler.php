@@ -7,16 +7,15 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
+use Semitexa\Core\Exception\ValidationException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\FileUploadPayload;
 use Semitexa\Platform\User\Domain\Service\FileStorageServiceInterface;
 
 #[AsPayloadHandler(payload: FileUploadPayload::class, resource: GenericResponse::class)]
-final class FileUploadHandler implements HandlerInterface
+final class FileUploadHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -24,20 +23,16 @@ final class FileUploadHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected FileStorageServiceInterface $fileStorageService;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(FileUploadPayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (!$payload instanceof FileUploadPayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
+            throw new AuthenticationException();
         }
 
         $contents = base64_decode($payload->getContents(), true);
 
         if ($contents === false) {
-            return Response::json(['error' => 'Invalid base64 contents'], 400);
+            throw new ValidationException(['contents' => ['Invalid base64 contents']]);
         }
 
         $userId = $this->auth->getUser()->getId();
@@ -49,7 +44,8 @@ final class FileUploadHandler implements HandlerInterface
             $userId,
         );
 
-        return Response::json([
+        $resource->setStatusCode(201);
+        $resource->setContext([
             'file' => [
                 'id' => $file->id,
                 'original_name' => $file->originalName,
@@ -57,6 +53,7 @@ final class FileUploadHandler implements HandlerInterface
                 'size' => $file->size,
                 'url' => '/api/platform/files/' . $file->id,
             ],
-        ], 201);
+        ]);
+        return $resource;
     }
 }

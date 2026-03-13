@@ -6,7 +6,6 @@ namespace Semitexa\Platform\User\Application\Payload\Request;
 
 use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Attributes\RequiresAuth;
-use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
@@ -18,6 +17,6 @@ use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
 )]
 #[TestablePayload(strategies: [StandardProfileStrategy::class])]
 #[RequiresAuth]
-class MeGetPayload implements PayloadInterface
+class MeGetPayload
 {
 }

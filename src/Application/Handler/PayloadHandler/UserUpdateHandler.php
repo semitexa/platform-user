@@ -7,16 +7,16 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
+use Semitexa\Core\Exception\ConflictException;
+use Semitexa\Core\Exception\NotFoundException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserUpdatePayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 
 #[AsPayloadHandler(payload: UserUpdatePayload::class, resource: GenericResponse::class)]
-final class UserUpdateHandler implements HandlerInterface
+final class UserUpdateHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -24,26 +24,22 @@ final class UserUpdateHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected UserRepositoryInterface $userRepo;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(UserUpdatePayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (!$payload instanceof UserUpdatePayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
+            throw new AuthenticationException();
         }
 
         $user = $this->userRepo->findById($payload->id);
 
         if ($user === null) {
-            return Response::json(['error' => 'User not found'], 404);
+            throw new NotFoundException('User', $payload->id);
         }
 
         if ($payload->getEmail() !== null) {
             $existing = $this->userRepo->findByEmail($payload->getEmail());
             if ($existing !== null && $existing->id !== $user->id) {
-                return Response::json(['error' => 'Email already exists'], 409);
+                throw new ConflictException('Email already exists');
             }
             $user->email = $payload->getEmail();
         }
@@ -64,7 +60,7 @@ final class UserUpdateHandler implements HandlerInterface
 
         $domain = $user->toDomain();
 
-        return Response::json([
+        $resource->setContext([
             'user' => [
                 'id' => $domain->id,
                 'email' => $domain->email,
@@ -72,5 +68,6 @@ final class UserUpdateHandler implements HandlerInterface
                 'is_active' => $domain->isActive,
             ],
         ]);
+        return $resource;
     }
 }

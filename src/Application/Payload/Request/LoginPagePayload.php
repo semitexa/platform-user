@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Semitexa\Platform\User\Application\Payload\Request;
 
 use Semitexa\Core\Attributes\AsPayload;
-use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Contract\ValidatablePayload;
 use Semitexa\Core\Http\PayloadValidationResult;
 use Semitexa\Core\Http\Response\GenericResponse;
@@ -18,7 +17,7 @@ use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
     methods: ['GET']
 )]
 #[TestablePayload(strategies: [StandardProfileStrategy::class])]
-class LoginPagePayload implements PayloadInterface, ValidatablePayload
+class LoginPagePayload implements ValidatablePayload
 {
     public function validate(): PayloadValidationResult
     {

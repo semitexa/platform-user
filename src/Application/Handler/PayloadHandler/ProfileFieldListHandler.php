@@ -7,16 +7,14 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\ProfileFieldListPayload;
 use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 
 #[AsPayloadHandler(payload: ProfileFieldListPayload::class, resource: GenericResponse::class)]
-final class ProfileFieldListHandler implements HandlerInterface
+final class ProfileFieldListHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -24,10 +22,10 @@ final class ProfileFieldListHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected ProfileFieldRepositoryInterface $profileFieldService;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(ProfileFieldListPayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
+            throw new AuthenticationException();
         }
 
         $fields = [];
@@ -45,6 +43,7 @@ final class ProfileFieldListHandler implements HandlerInterface
             ];
         }
 
-        return Response::json(['fields' => $fields]);
+        $resource->setContext(['fields' => $fields]);
+        return $resource;
     }
 }

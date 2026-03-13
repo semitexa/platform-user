@@ -6,21 +6,18 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\RoleListPayload;
 use Semitexa\Platform\User\Domain\Repository\RoleRepositoryInterface;
 
 #[AsPayloadHandler(payload: RoleListPayload::class, resource: GenericResponse::class)]
-final class RoleListHandler implements HandlerInterface
+final class RoleListHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected RoleRepositoryInterface $roleRepo;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(RoleListPayload $payload, GenericResponse $resource): GenericResponse
     {
         $roles = [];
         foreach ($this->roleRepo->findAll() as $role) {
@@ -33,6 +30,7 @@ final class RoleListHandler implements HandlerInterface
             ];
         }
 
-        return Response::json(['roles' => $roles]);
+        $resource->setContext(['roles' => $roles]);
+        return $resource;
     }
 }

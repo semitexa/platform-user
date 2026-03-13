@@ -7,17 +7,16 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
+use Semitexa\Core\Exception\ConflictException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\ProfileFieldResource;
 use Semitexa\Platform\User\Application\Payload\Request\ProfileFieldCreatePayload;
 use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 
 #[AsPayloadHandler(payload: ProfileFieldCreatePayload::class, resource: GenericResponse::class)]
-final class ProfileFieldCreateHandler implements HandlerInterface
+final class ProfileFieldCreateHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -25,19 +24,15 @@ final class ProfileFieldCreateHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected ProfileFieldRepositoryInterface $profileFieldService;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(ProfileFieldCreatePayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (!$payload instanceof ProfileFieldCreatePayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
+            throw new AuthenticationException();
         }
 
         $existing = $this->profileFieldService->findBySlug($payload->getSlug());
         if ($existing !== null) {
-            return Response::json(['error' => 'A profile field with this slug already exists'], 409);
+            throw new ConflictException('A profile field with this slug already exists');
         }
 
         $field = new ProfileFieldResource();
@@ -54,7 +49,8 @@ final class ProfileFieldCreateHandler implements HandlerInterface
 
         $domain = $field->toDomain();
 
-        return Response::json([
+        $resource->setStatusCode(201);
+        $resource->setContext([
             'field' => [
                 'id' => $domain->id,
                 'slug' => $domain->slug,
@@ -66,6 +62,7 @@ final class ProfileFieldCreateHandler implements HandlerInterface
                 'is_visible' => $domain->isVisible,
                 'icon' => $domain->icon,
             ],
-        ], 201);
+        ]);
+        return $resource;
     }
 }

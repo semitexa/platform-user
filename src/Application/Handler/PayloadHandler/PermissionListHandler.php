@@ -6,21 +6,18 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\PermissionListPayload;
 use Semitexa\Platform\User\Domain\Repository\PermissionRepositoryInterface;
 
 #[AsPayloadHandler(payload: PermissionListPayload::class, resource: GenericResponse::class)]
-final class PermissionListHandler implements HandlerInterface
+final class PermissionListHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected PermissionRepositoryInterface $permRepo;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(PermissionListPayload $payload, GenericResponse $resource): GenericResponse
     {
         $permissions = [];
         foreach ($this->permRepo->findAll() as $perm) {
@@ -32,6 +29,7 @@ final class PermissionListHandler implements HandlerInterface
             ];
         }
 
-        return Response::json(['permissions' => $permissions]);
+        $resource->setContext(['permissions' => $permissions]);
+        return $resource;
     }
 }

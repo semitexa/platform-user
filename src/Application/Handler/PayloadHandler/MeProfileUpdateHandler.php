@@ -7,18 +7,16 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\ProfileValueResource;
 use Semitexa\Platform\User\Application\Payload\Request\MeProfileUpdatePayload;
 use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 
 #[AsPayloadHandler(payload: MeProfileUpdatePayload::class, resource: GenericResponse::class)]
-final class MeProfileUpdateHandler implements HandlerInterface
+final class MeProfileUpdateHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -29,14 +27,10 @@ final class MeProfileUpdateHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected ProfileValueRepositoryInterface $profileValueService;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(MeProfileUpdatePayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (!$payload instanceof MeProfileUpdatePayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
+            throw new AuthenticationException();
         }
 
         $userId = $this->auth->getUser()->getId();
@@ -81,9 +75,10 @@ final class MeProfileUpdateHandler implements HandlerInterface
             ];
         }
 
-        return Response::json([
+        $resource->setContext([
             'success' => true,
             'fields' => $updatedFields,
         ]);
+        return $resource;
     }
 }
