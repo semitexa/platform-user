@@ -7,16 +7,15 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
+use Semitexa\Core\Exception\NotFoundException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\ProfileFieldUpdatePayload;
 use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 
 #[AsPayloadHandler(payload: ProfileFieldUpdatePayload::class, resource: GenericResponse::class)]
-final class ProfileFieldUpdateHandler implements HandlerInterface
+final class ProfileFieldUpdateHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -24,20 +23,16 @@ final class ProfileFieldUpdateHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected ProfileFieldRepositoryInterface $profileFieldService;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(ProfileFieldUpdatePayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (!$payload instanceof ProfileFieldUpdatePayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
+            throw new AuthenticationException();
         }
 
         $field = $this->profileFieldService->findById($payload->id);
 
         if ($field === null) {
-            return Response::json(['error' => 'Profile field not found'], 404);
+            throw new NotFoundException('Profile field', $payload->id);
         }
 
         if ($payload->getSlug() !== null) {
@@ -69,7 +64,7 @@ final class ProfileFieldUpdateHandler implements HandlerInterface
 
         $domain = $field->toDomain();
 
-        return Response::json([
+        $resource->setContext([
             'field' => [
                 'id' => $domain->id,
                 'slug' => $domain->slug,
@@ -82,5 +77,6 @@ final class ProfileFieldUpdateHandler implements HandlerInterface
                 'icon' => $domain->icon,
             ],
         ]);
+        return $resource;
     }
 }

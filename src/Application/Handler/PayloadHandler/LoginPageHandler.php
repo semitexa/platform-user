@@ -7,26 +7,26 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\LoginPagePayload;
 
 #[AsPayloadHandler(payload: LoginPagePayload::class, resource: GenericResponse::class)]
-final class LoginPageHandler implements HandlerInterface
+final class LoginPageHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(LoginPagePayload $payload, GenericResponse $resource): GenericResponse
     {
         if (!$this->auth->isGuest()) {
-            return Response::redirect('/platform');
+            $resource->setRedirect('/platform');
+            return $resource;
         }
 
-        return Response::html(self::renderLoginPage());
+        $resource->setContent(self::renderLoginPage());
+        $resource->setHeader('Content-Type', 'text/html; charset=utf-8');
+        return $resource;
     }
 
     private static function renderLoginPage(string $error = ''): string

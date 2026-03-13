@@ -6,7 +6,6 @@ namespace Semitexa\Platform\User\Application\Payload\Request;
 
 use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Attributes\RequiresAuth;
-use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Contract\ValidatablePayload;
 use Semitexa\Core\Http\PayloadValidationResult;
 use Semitexa\Core\Http\Response\GenericResponse;
@@ -21,7 +20,7 @@ use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 )]
 #[TestablePayload(strategies: [ParanoiaProfileStrategy::class])]
 #[RequiresAuth]
-class FileUploadPayload implements PayloadInterface, ValidatablePayload
+class FileUploadPayload implements ValidatablePayload
 {
     use NotBlankValidationTrait;
 

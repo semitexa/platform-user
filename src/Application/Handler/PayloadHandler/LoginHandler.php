@@ -8,18 +8,16 @@ use Semitexa\Auth\Context\AuthManager;
 use Semitexa\Auth\Handler\SessionAuthHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Core\Session\SessionInterface;
 use Semitexa\Platform\User\Application\Payload\Request\LoginPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
 #[AsPayloadHandler(payload: LoginPayload::class, resource: GenericResponse::class)]
-final class LoginHandler implements HandlerInterface
+final class LoginHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected SessionInterface $session;
@@ -30,16 +28,12 @@ final class LoginHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected ?UserActivityRepositoryInterface $activityService = null;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(LoginPayload $payload, GenericResponse $resource): GenericResponse
     {
-        if (!$payload instanceof LoginPayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
-        }
-
         $user = $this->userRepo->findByEmail($payload->getEmail());
 
         if ($user === null || !$user->is_active || !password_verify($payload->getPassword(), $user->password_hash)) {
-            return Response::json(['error' => 'Invalid credentials'], 401);
+            throw new AuthenticationException('Invalid credentials');
         }
 
         $domain = $user->toDomain();
@@ -58,12 +52,13 @@ final class LoginHandler implements HandlerInterface
             // Activity recording is best-effort
         }
 
-        return Response::json([
+        $resource->setContext([
             'user' => [
                 'id' => $domain->id,
                 'email' => $domain->email,
                 'name' => $domain->name,
             ],
         ]);
+        return $resource;
     }
 }

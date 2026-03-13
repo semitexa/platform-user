@@ -7,7 +7,6 @@ namespace Semitexa\Platform\User\Application\Payload\Request;
 use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Attributes\RequiresAuth;
 use Semitexa\Core\Attributes\RequiresPermission;
-use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
@@ -16,7 +15,7 @@ use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 #[TestablePayload(strategies: [ParanoiaProfileStrategy::class])]
 #[RequiresAuth]
 #[RequiresPermission('profile-fields.manage')]
-class ProfileFieldUpdatePayload implements PayloadInterface
+class ProfileFieldUpdatePayload
 {
     public string $id = '';
     protected ?string $slug = null;

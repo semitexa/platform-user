@@ -7,11 +7,10 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
+use Semitexa\Core\Exception\NotFoundException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\ProfileValueResource;
 use Semitexa\Platform\User\Application\Payload\Request\UserProfileUpdatePayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
@@ -19,7 +18,7 @@ use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
 use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 
 #[AsPayloadHandler(payload: UserProfileUpdatePayload::class, resource: GenericResponse::class)]
-final class UserProfileUpdateHandler implements HandlerInterface
+final class UserProfileUpdateHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -33,20 +32,16 @@ final class UserProfileUpdateHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected ProfileValueRepositoryInterface $profileValueService;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(UserProfileUpdatePayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (!$payload instanceof UserProfileUpdatePayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
+            throw new AuthenticationException();
         }
 
         $userResource = $this->userRepo->findById($payload->id);
 
         if ($userResource === null) {
-            return Response::json(['error' => 'User not found'], 404);
+            throw new NotFoundException('User', $payload->id);
         }
 
         $fieldsInput = $payload->getFields();
@@ -90,9 +85,10 @@ final class UserProfileUpdateHandler implements HandlerInterface
             ];
         }
 
-        return Response::json([
+        $resource->setContext([
             'success' => true,
             'fields' => $updatedFields,
         ]);
+        return $resource;
     }
 }

@@ -7,16 +7,15 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
+use Semitexa\Core\Exception\NotFoundException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserGetPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 
 #[AsPayloadHandler(payload: UserGetPayload::class, resource: GenericResponse::class)]
-final class UserGetHandler implements HandlerInterface
+final class UserGetHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -24,25 +23,21 @@ final class UserGetHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected UserRepositoryInterface $userRepo;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(UserGetPayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (!$payload instanceof UserGetPayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
+            throw new AuthenticationException();
         }
 
         $result = $this->userRepo->findById($payload->id);
 
         if ($result === null) {
-            return Response::json(['error' => 'User not found'], 404);
+            throw new NotFoundException('User', $payload->id);
         }
 
         $domain = $result->toDomain();
 
-        return Response::json([
+        $resource->setContext([
             'user' => [
                 'id' => $domain->id,
                 'email' => $domain->email,
@@ -50,5 +45,6 @@ final class UserGetHandler implements HandlerInterface
                 'is_active' => $domain->isActive,
             ],
         ]);
+        return $resource;
     }
 }

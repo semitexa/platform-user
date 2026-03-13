@@ -7,11 +7,10 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
+use Semitexa\Core\Exception\NotFoundException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\MeGetPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
@@ -20,7 +19,7 @@ use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
 use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
 #[AsPayloadHandler(payload: MeGetPayload::class, resource: GenericResponse::class)]
-final class MeGetHandler implements HandlerInterface
+final class MeGetHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -40,10 +39,10 @@ final class MeGetHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected UserActivityRepositoryInterface $activityService;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(MeGetPayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
+            throw new AuthenticationException();
         }
 
         $userId = $this->auth->getUser()->getId();
@@ -51,7 +50,7 @@ final class MeGetHandler implements HandlerInterface
         $userResource = $this->userRepo->findById($userId);
 
         if ($userResource === null) {
-            return Response::json(['error' => 'User not found'], 404);
+            throw new NotFoundException('User', $userId);
         }
 
         $user = $userResource->toDomain();
@@ -100,7 +99,7 @@ final class MeGetHandler implements HandlerInterface
 
         $lastLogin = $this->activityService->getLastLoginForUser($userId);
 
-        return Response::json([
+        $resource->setContext([
             'user' => [
                 'id' => $user->id,
                 'email' => $user->email,
@@ -111,5 +110,6 @@ final class MeGetHandler implements HandlerInterface
             'profile_completeness' => $completeness,
             'last_login' => $lastLogin?->createdAt?->format(\DateTimeInterface::ATOM),
         ]);
+        return $resource;
     }
 }

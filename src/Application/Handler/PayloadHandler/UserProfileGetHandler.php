@@ -7,11 +7,10 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
+use Semitexa\Core\Exception\NotFoundException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserProfileGetPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
@@ -19,7 +18,7 @@ use Semitexa\Platform\User\Domain\Repository\ProfileValueRepositoryInterface;
 use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
 
 #[AsPayloadHandler(payload: UserProfileGetPayload::class, resource: GenericResponse::class)]
-final class UserProfileGetHandler implements HandlerInterface
+final class UserProfileGetHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -36,20 +35,16 @@ final class UserProfileGetHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected RbacServiceInterface $rbacService;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(UserProfileGetPayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (!$payload instanceof UserProfileGetPayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
+            throw new AuthenticationException();
         }
 
         $userResource = $this->userRepo->findById($payload->id);
 
         if ($userResource === null) {
-            return Response::json(['error' => 'User not found'], 404);
+            throw new NotFoundException('User', $payload->id);
         }
 
         $user = $userResource->toDomain();
@@ -96,7 +91,7 @@ final class UserProfileGetHandler implements HandlerInterface
             ];
         }
 
-        return Response::json([
+        $resource->setContext([
             'user' => [
                 'id' => $user->id,
                 'email' => $user->email,
@@ -106,5 +101,6 @@ final class UserProfileGetHandler implements HandlerInterface
             'roles' => $roles,
             'profile_completeness' => $completeness,
         ]);
+        return $resource;
     }
 }

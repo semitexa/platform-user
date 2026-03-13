@@ -6,7 +6,6 @@ namespace Semitexa\Platform\User\Application\Payload\Request;
 
 use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Attributes\RequiresAuth;
-use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
@@ -31,7 +30,7 @@ use App\Tests\Auth\SessionTestTokenProvider;
         'type_mutation' => false,
     ]
 )]
-class UserDeletePayload implements PayloadInterface
+class UserDeletePayload
 {
     public string $id = '';
 

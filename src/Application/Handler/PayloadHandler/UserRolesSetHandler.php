@@ -6,26 +6,19 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserRolesSetPayload;
 use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
 
 #[AsPayloadHandler(payload: UserRolesSetPayload::class, resource: GenericResponse::class)]
-final class UserRolesSetHandler implements HandlerInterface
+final class UserRolesSetHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected RbacServiceInterface $rbac;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(UserRolesSetPayload $payload, GenericResponse $resource): GenericResponse
     {
-        if (!$payload instanceof UserRolesSetPayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
-        }
-
         // Revoke all existing roles
         $existingRoles = $this->rbac->getUserRoles($payload->id);
         foreach ($existingRoles as $role) {
@@ -51,6 +44,7 @@ final class UserRolesSetHandler implements HandlerInterface
             ];
         }
 
-        return Response::json(['roles' => $roles]);
+        $resource->setContext(['roles' => $roles]);
+        return $resource;
     }
 }

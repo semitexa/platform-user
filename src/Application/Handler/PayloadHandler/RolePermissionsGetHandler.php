@@ -6,26 +6,19 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\RolePermissionsGetPayload;
 use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
 
 #[AsPayloadHandler(payload: RolePermissionsGetPayload::class, resource: GenericResponse::class)]
-final class RolePermissionsGetHandler implements HandlerInterface
+final class RolePermissionsGetHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected RbacServiceInterface $rbac;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(RolePermissionsGetPayload $payload, GenericResponse $resource): GenericResponse
     {
-        if (!$payload instanceof RolePermissionsGetPayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
-        }
-
         $domainPermissions = $this->rbac->getRolePermissions($payload->id);
 
         $permissions = [];
@@ -38,6 +31,7 @@ final class RolePermissionsGetHandler implements HandlerInterface
             ];
         }
 
-        return Response::json(['permissions' => $permissions]);
+        $resource->setContext(['permissions' => $permissions]);
+        return $resource;
     }
 }

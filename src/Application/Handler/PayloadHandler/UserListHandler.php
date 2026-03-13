@@ -7,11 +7,9 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Auth\AuthContextInterface;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\AuthenticationException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\UserListPayload;
 use Semitexa\Platform\User\Domain\Repository\UserRepositoryInterface;
 use Semitexa\Platform\User\Domain\Repository\ProfileFieldRepositoryInterface;
@@ -20,7 +18,7 @@ use Semitexa\Platform\User\Domain\Service\RbacServiceInterface;
 use Semitexa\Platform\User\Domain\Repository\UserActivityRepositoryInterface;
 
 #[AsPayloadHandler(payload: UserListPayload::class, resource: GenericResponse::class)]
-final class UserListHandler implements HandlerInterface
+final class UserListHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected AuthContextInterface $auth;
@@ -40,14 +38,10 @@ final class UserListHandler implements HandlerInterface
     #[InjectAsReadonly]
     protected ProfileValueRepositoryInterface $profileValueService;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(UserListPayload $payload, GenericResponse $resource): GenericResponse
     {
         if ($this->auth->isGuest()) {
-            return Response::json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (!$payload instanceof UserListPayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
+            throw new AuthenticationException();
         }
 
         $search = $payload->getSearch();
@@ -118,6 +112,7 @@ final class UserListHandler implements HandlerInterface
             ];
         }
 
-        return Response::json(['users' => $users]);
+        $resource->setContext(['users' => $users]);
+        return $resource;
     }
 }

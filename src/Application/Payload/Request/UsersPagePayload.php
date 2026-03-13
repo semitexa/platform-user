@@ -7,7 +7,6 @@ namespace Semitexa\Platform\User\Application\Payload\Request;
 use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Attributes\RequiresAuth;
 use Semitexa\Core\Attributes\RequiresPermission;
-use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Ssr\Http\Response\HtmlResponse;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
@@ -16,6 +15,6 @@ use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
 #[TestablePayload(strategies: [StandardProfileStrategy::class])]
 #[RequiresAuth]
 #[RequiresPermission('users.list')]
-class UsersPagePayload implements PayloadInterface
+class UsersPagePayload
 {
 }

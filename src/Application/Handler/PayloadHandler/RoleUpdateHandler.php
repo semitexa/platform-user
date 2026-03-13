@@ -6,30 +6,24 @@ namespace Semitexa\Platform\User\Application\Handler\PayloadHandler;
 
 use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
-use Semitexa\Core\Contract\HandlerInterface;
-use Semitexa\Core\Contract\PayloadInterface;
-use Semitexa\Core\Contract\ResourceInterface;
+use Semitexa\Core\Contract\TypedHandlerInterface;
+use Semitexa\Core\Exception\NotFoundException;
 use Semitexa\Core\Http\Response\GenericResponse;
-use Semitexa\Core\Response;
 use Semitexa\Platform\User\Application\Payload\Request\RoleUpdatePayload;
 use Semitexa\Platform\User\Domain\Repository\RoleRepositoryInterface;
 
 #[AsPayloadHandler(payload: RoleUpdatePayload::class, resource: GenericResponse::class)]
-final class RoleUpdateHandler implements HandlerInterface
+final class RoleUpdateHandler implements TypedHandlerInterface
 {
     #[InjectAsReadonly]
     protected RoleRepositoryInterface $roleRepo;
 
-    public function handle(PayloadInterface $payload, ResourceInterface $resource): ResourceInterface
+    public function handle(RoleUpdatePayload $payload, GenericResponse $resource): GenericResponse
     {
-        if (!$payload instanceof RoleUpdatePayload) {
-            return Response::json(['error' => 'Invalid payload'], 400);
-        }
-
         $role = $this->roleRepo->findById($payload->id);
 
         if ($role === null) {
-            return Response::json(['error' => 'Role not found'], 404);
+            throw new NotFoundException('Role', $payload->id);
         }
 
         if ($payload->getName() !== null) {
@@ -44,7 +38,7 @@ final class RoleUpdateHandler implements HandlerInterface
 
         $domain = $role->toDomain();
 
-        return Response::json([
+        $resource->setContext([
             'role' => [
                 'id' => $domain->id,
                 'slug' => $domain->slug,
@@ -53,5 +47,6 @@ final class RoleUpdateHandler implements HandlerInterface
                 'is_system' => $domain->isSystem,
             ],
         ]);
+        return $resource;
     }
 }

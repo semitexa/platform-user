@@ -6,7 +6,6 @@ namespace Semitexa\Platform\User\Application\Payload\Request;
 
 use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Attributes\RequiresAuth;
-use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
@@ -14,7 +13,7 @@ use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
 #[AsPayload(path: '/api/platform/roles/{id}/permissions', methods: ['GET'], responseWith: GenericResponse::class, requirements: ['id' => '[a-f0-9\\-]{36}'])]
 #[TestablePayload(strategies: [StandardProfileStrategy::class])]
 #[RequiresAuth]
-class RolePermissionsGetPayload implements PayloadInterface
+class RolePermissionsGetPayload
 {
     public string $id = '';
 

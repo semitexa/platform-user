@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Semitexa\Platform\User\Application\Payload\Request;
 
 use Semitexa\Core\Attributes\AsPayload;
-use Semitexa\Core\Contract\PayloadInterface;
 use Semitexa\Core\Contract\ValidatablePayload;
 use Semitexa\Core\Http\PayloadValidationResult;
 use Semitexa\Core\Http\Response\GenericResponse;
@@ -27,7 +26,7 @@ use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
         UserCreatePasswordLengthStrategy::class, // Custom: password < 8 chars → 422
     ]
 )]
-class UserCreatePayload implements PayloadInterface, ValidatablePayload
+class UserCreatePayload implements ValidatablePayload
 {
     use NotBlankValidationTrait;
     use EmailValidationTrait;
