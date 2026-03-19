@@ -11,6 +11,7 @@ use Semitexa\Orm\Attribute\Index;
 use Semitexa\Orm\Attribute\TenantScoped;
 use Semitexa\Orm\Contract\DomainMappable;
 use Semitexa\Orm\Trait\HasUuidV7;
+use Semitexa\Orm\Trait\Seedable;
 use Semitexa\Orm\Uuid\Uuid7;
 use Semitexa\Platform\User\Domain\Model\RolePermission;
 
@@ -20,6 +21,7 @@ use Semitexa\Platform\User\Domain\Model\RolePermission;
 class RolePermissionResource implements DomainMappable
 {
     use HasUuidV7;
+    use Seedable;
 
     #[Column(type: MySqlType::Varchar, length: 64, nullable: true)]
     public ?string $tenant_id = null;
@@ -29,6 +31,17 @@ class RolePermissionResource implements DomainMappable
 
     #[Column(type: MySqlType::Binary, length: 16)]
     public string $permission_id = '';
+
+    public static function defaults(): array
+    {
+        $adminRoleId = '01900000-0000-7000-8000-000000000010';
+        return [
+            self::create(id: '01900000-0000-7000-8000-000000000020', role_id: $adminRoleId, permission_id: '01900000-0000-7000-8000-000000000001'),
+            self::create(id: '01900000-0000-7000-8000-000000000021', role_id: $adminRoleId, permission_id: '01900000-0000-7000-8000-000000000002'),
+            self::create(id: '01900000-0000-7000-8000-000000000022', role_id: $adminRoleId, permission_id: '01900000-0000-7000-8000-000000000003'),
+            self::create(id: '01900000-0000-7000-8000-000000000023', role_id: $adminRoleId, permission_id: '01900000-0000-7000-8000-000000000004'),
+        ];
+    }
 
     public function toDomain(): RolePermission
     {

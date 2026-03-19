@@ -37,11 +37,9 @@ class PermissionRepository extends AbstractRepository implements PermissionRepos
 
     public function findBySlug(string $slug): ?Permission
     {
-        $resource = $this->select()
+        return $this->select()
             ->where('slug', '=', $slug)
             ->fetchOne();
-
-        return $resource?->toDomain();
     }
 
     public function findByIds(array $ids): array
