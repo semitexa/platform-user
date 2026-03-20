@@ -34,12 +34,12 @@ class RolePermissionResource implements DomainMappable
 
     public static function defaults(): array
     {
-        $adminRoleId = '01900000-0000-7000-8000-000000000010';
+        $adminRoleId = self::normalizeUuid('01900000-0000-7000-8000-000000000010');
         return [
-            self::create(id: '01900000-0000-7000-8000-000000000020', role_id: $adminRoleId, permission_id: '01900000-0000-7000-8000-000000000001'),
-            self::create(id: '01900000-0000-7000-8000-000000000021', role_id: $adminRoleId, permission_id: '01900000-0000-7000-8000-000000000002'),
-            self::create(id: '01900000-0000-7000-8000-000000000022', role_id: $adminRoleId, permission_id: '01900000-0000-7000-8000-000000000003'),
-            self::create(id: '01900000-0000-7000-8000-000000000023', role_id: $adminRoleId, permission_id: '01900000-0000-7000-8000-000000000004'),
+            self::create(id: self::normalizeUuid('01900000-0000-7000-8000-000000000020'), role_id: $adminRoleId, permission_id: self::normalizeUuid('01900000-0000-7000-8000-000000000001')),
+            self::create(id: self::normalizeUuid('01900000-0000-7000-8000-000000000021'), role_id: $adminRoleId, permission_id: self::normalizeUuid('01900000-0000-7000-8000-000000000002')),
+            self::create(id: self::normalizeUuid('01900000-0000-7000-8000-000000000022'), role_id: $adminRoleId, permission_id: self::normalizeUuid('01900000-0000-7000-8000-000000000003')),
+            self::create(id: self::normalizeUuid('01900000-0000-7000-8000-000000000023'), role_id: $adminRoleId, permission_id: self::normalizeUuid('01900000-0000-7000-8000-000000000004')),
         ];
     }
 
