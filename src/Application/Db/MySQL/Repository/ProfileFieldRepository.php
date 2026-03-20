@@ -37,10 +37,7 @@ class ProfileFieldRepository extends AbstractRepository implements ProfileFieldR
         if ($limit !== null) {
             $query->limit($limit);
         }
-        return array_values(array_map(
-            static fn(ProfileFieldResource $resource) => $resource->toDomain(),
-            $query->fetchAll(),
-        ));
+        return array_values($query->fetchAll());
     }
 
     public function findBySlug(string $slug): ?ProfileField

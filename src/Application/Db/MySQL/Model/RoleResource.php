@@ -15,6 +15,7 @@ use Semitexa\Orm\Contract\FilterableResourceInterface;
 use Semitexa\Orm\Trait\FilterableTrait;
 use Semitexa\Orm\Trait\HasTimestamps;
 use Semitexa\Orm\Trait\HasUuidV7;
+use Semitexa\Orm\Trait\Seedable;
 use Semitexa\Platform\User\Domain\Model\Role;
 
 #[FromTable(name: 'platform_roles', mapTo: Role::class)]
@@ -25,6 +26,7 @@ class RoleResource implements DomainMappable, FilterableResourceInterface
     use HasUuidV7;
     use HasTimestamps;
     use FilterableTrait;
+    use Seedable;
 
     #[Column(type: MySqlType::Varchar, length: 64, nullable: true)]
     public ?string $tenant_id = null;
@@ -42,6 +44,13 @@ class RoleResource implements DomainMappable, FilterableResourceInterface
 
     #[Column(type: MySqlType::Boolean)]
     public bool $is_system = false;
+
+    public static function defaults(): array
+    {
+        return [
+            self::create(id: '01900000-0000-7000-8000-000000000010', slug: 'admin', name: 'Administrator', description: 'Full platform access', is_system: true),
+        ];
+    }
 
     public function toDomain(): Role
     {
