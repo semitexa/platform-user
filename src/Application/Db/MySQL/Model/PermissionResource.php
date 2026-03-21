@@ -36,10 +36,30 @@ class PermissionResource implements DomainMappable, FilterableResourceInterface
     public static function defaults(): array
     {
         return [
-            self::create(id: '01900000-0000-7000-8000-000000000001', slug: 'users.list',                    name: 'View Users',            group_key: 'users'),
-            self::create(id: '01900000-0000-7000-8000-000000000002', slug: 'roles.manage',                  name: 'Manage Roles',          group_key: 'roles'),
-            self::create(id: '01900000-0000-7000-8000-000000000003', slug: 'profile-fields.manage',         name: 'Manage Profile Fields', group_key: 'profile'),
-            self::create(id: '01900000-0000-7000-8000-000000000004', slug: 'platform.settings.manage_global', name: 'Manage Global Settings', group_key: 'platform'),
+            self::create(
+                id: '01900000-0000-7000-8000-000000000001',
+                slug: 'users.list',
+                name: 'View Users',
+                group_key: 'users'
+            ),
+            self::create(
+                id: '01900000-0000-7000-8000-000000000002',
+                slug: 'roles.manage',
+                name: 'Manage Roles',
+                group_key: 'roles'
+            ),
+            self::create(
+                id: '01900000-0000-7000-8000-000000000003',
+                slug: 'profile-fields.manage',
+                name: 'Manage Profile Fields',
+                group_key: 'profile'
+            ),
+            self::create(
+                id: '01900000-0000-7000-8000-000000000004',
+                slug: 'platform.settings.manage_global',
+                name: 'Manage Global Settings',
+                group_key: 'platform'
+            ),
         ];
     }
 
