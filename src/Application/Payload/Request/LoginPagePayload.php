@@ -10,7 +10,9 @@ use Semitexa\Core\Http\PayloadValidationResult;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
+use Semitexa\Authorization\Attributes\PublicEndpoint;
 
+#[PublicEndpoint]
 #[AsPayload(
     responseWith: GenericResponse::class,
     path: '/platform/login',

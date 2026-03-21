@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Semitexa\Platform\User\Application\Payload\Request;
 
 use Semitexa\Core\Attributes\AsPayload;
-use Semitexa\Core\Attributes\RequiresAuth;
-use Semitexa\Core\Attributes\RequiresPermission;
+use Semitexa\Authorization\Attributes\RequiresPermission;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 
 #[AsPayload(path: '/api/platform/roles/{id}/permissions', methods: ['PUT'], responseWith: GenericResponse::class, requirements: ['id' => '[a-f0-9\\-]{36}'])]
-#[RequiresAuth]
 #[RequiresPermission('roles.manage')]
 #[TestablePayload(strategies: [ParanoiaProfileStrategy::class])]
 class RolePermissionsSetPayload

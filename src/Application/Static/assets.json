@@ -1,0 +1,29 @@
+{
+    "$schema": "semitexa://asset-manifest/v2",
+    "module": "platform-user",
+    "include": {
+        "css": ["css/**/*.css"],
+        "js": ["js/**/*.js"]
+    },
+    "overrides": {
+        "js/user-profile.js": {
+            "priority": 80,
+            "attributes": { "type": "module" },
+            "dependencies": ["platform-wm:js:wm-sdk"]
+        },
+        "js/users-list.js": {
+            "priority": 80,
+            "attributes": { "type": "module" },
+            "dependencies": ["platform-wm:js:wm-sdk"]
+        },
+        "js/user-create.js": {
+            "priority": 80,
+            "attributes": { "type": "module" },
+            "dependencies": ["platform-wm:js:wm-sdk"]
+        },
+        "js/me-profile.js": {
+            "priority": 80,
+            "attributes": { "type": "module" }
+        }
+    }
+}

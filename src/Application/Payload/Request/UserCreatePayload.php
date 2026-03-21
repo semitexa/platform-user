@@ -14,7 +14,9 @@ use Semitexa\Core\Validation\Trait\NotBlankValidationTrait;
 use Semitexa\Testing\Attributes\TestablePayload;
 use App\Tests\Strategy\UserCreatePasswordLengthStrategy;
 use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
+use Semitexa\Authorization\Attributes\PublicEndpoint;
 
+#[PublicEndpoint]
 #[AsPayload(
     responseWith: GenericResponse::class,
     path: '/api/platform/users',

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Semitexa\Platform\User\Application\Payload\Request;
 
 use Semitexa\Core\Attributes\AsPayload;
-use Semitexa\Core\Attributes\RequiresAuth;
 use Semitexa\Core\Contract\ValidatablePayload;
 use Semitexa\Core\Http\PayloadValidationResult;
 use Semitexa\Core\Http\Response\GenericResponse;
@@ -16,7 +15,6 @@ use Semitexa\Core\Validation\Trait\NotBlankValidationTrait;
     path: '/api/platform/user/unlock',
     methods: ['POST']
 )]
-#[RequiresAuth]
 final class UnlockPayload implements ValidatablePayload
 {
     use NotBlankValidationTrait;

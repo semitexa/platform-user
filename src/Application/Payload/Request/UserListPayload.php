@@ -8,7 +8,9 @@ use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
+use Semitexa\Authorization\Attributes\PublicEndpoint;
 
+#[PublicEndpoint]
 #[AsPayload(path: '/api/platform/users', methods: ['GET'], responseWith: GenericResponse::class)]
 #[TestablePayload(strategies: [StandardProfileStrategy::class])]
 class UserListPayload
