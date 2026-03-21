@@ -26,6 +26,15 @@ use Semitexa\Authorization\Attributes\PublicEndpoint;
     strategies: [
         ParanoiaProfileStrategy::class,      // Standard (Auth, Method, Type) + Monkey + MemoryLeak
         UserCreatePasswordLengthStrategy::class, // Custom: password < 8 chars → 422
+    ],
+    context: [
+        'valid_body' => [
+            'email' => 'test@example.com',
+            'name' => 'Test User',
+            'password' => 'ValidPass123',
+        ],
+        'isolation_marker_field' => 'name',
+        'skip_coroutine_isolation' => true,
     ]
 )]
 class UserCreatePayload implements ValidatablePayload

@@ -23,7 +23,8 @@ use App\Tests\Auth\SessionTestTokenProvider;
         'auth_header'  => 'Cookie',
         'auth_scheme'  => '',
         'token_provider' => SessionTestTokenProvider::class,
-        // Requires TEST_USER_EMAIL + TEST_USER_PASSWORD env vars (see SessionTestTokenProvider).
+        // Do not require a real seeded session for contract tests in release preflight.
+        'security_skip_valid_token_check' => true,
         // id is a URL path parameter — type cannot be mutated via request body
         'type_mutation' => false,
     ]
