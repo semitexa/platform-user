@@ -13,8 +13,9 @@ use Semitexa\Core\Validation\Trait\NotBlankValidationTrait;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\ParanoiaProfileStrategy;
 use App\Tests\Strategy\LoginEmailFormatStrategy;
+use Semitexa\Authorization\Attributes\PublicEndpoint;
 
-// Public endpoint — no #[RequiresAuth]. SecurityStrategy skips automatically.
+#[PublicEndpoint]
 #[AsPayload(
     responseWith: GenericResponse::class,
     path: '/api/platform/user/login',
