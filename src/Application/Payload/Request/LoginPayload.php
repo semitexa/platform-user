@@ -25,6 +25,15 @@ use Semitexa\Authorization\Attributes\PublicEndpoint;
     strategies: [
         ParanoiaProfileStrategy::class,    // Standard (Auth, Method, Type) + Monkey + MemoryLeak
         LoginEmailFormatStrategy::class,   // Custom: email format + blank fields → 422
+    ],
+    context: [
+        'valid_body' => [
+            'email' => 'user@example.com',
+            'password' => 'secret123',
+        ],
+        'isolation_marker_field' => 'password',
+        'skip_memory_leak' => true,
+        'skip_coroutine_isolation' => true,
     ]
 )]
 class LoginPayload implements ValidatablePayload
