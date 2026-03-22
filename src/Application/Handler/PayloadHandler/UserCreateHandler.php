@@ -10,6 +10,7 @@ use Semitexa\Core\Auth\AuthContextInterface;
 use Semitexa\Core\Contract\TypedHandlerInterface;
 use Semitexa\Core\Exception\AuthenticationException;
 use Semitexa\Core\Exception\ConflictException;
+use Semitexa\Core\Http\HttpStatus;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Platform\User\Application\Payload\Request\UserCreatePayload;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\PlatformUserResource;
@@ -45,7 +46,7 @@ final class UserCreateHandler implements TypedHandlerInterface
 
         $domain = $user->toDomain();
 
-        $resource->setStatusCode(201);
+        $resource->setStatusCode(HttpStatus::Created->value);
         $resource->setContext([
             'user' => [
                 'id' => $domain->id,

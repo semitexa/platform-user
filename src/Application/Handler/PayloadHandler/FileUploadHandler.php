@@ -10,6 +10,7 @@ use Semitexa\Core\Auth\AuthContextInterface;
 use Semitexa\Core\Contract\TypedHandlerInterface;
 use Semitexa\Core\Exception\AuthenticationException;
 use Semitexa\Core\Exception\ValidationException;
+use Semitexa\Core\Http\HttpStatus;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Platform\User\Application\Payload\Request\FileUploadPayload;
 use Semitexa\Platform\User\Domain\Service\FileStorageServiceInterface;
@@ -44,7 +45,7 @@ final class FileUploadHandler implements TypedHandlerInterface
             $userId,
         );
 
-        $resource->setStatusCode(201);
+        $resource->setStatusCode(HttpStatus::Created->value);
         $resource->setContext([
             'file' => [
                 'id' => $file->id,

@@ -10,6 +10,7 @@ use Semitexa\Core\Auth\AuthContextInterface;
 use Semitexa\Core\Contract\TypedHandlerInterface;
 use Semitexa\Core\Exception\AuthenticationException;
 use Semitexa\Core\Exception\ConflictException;
+use Semitexa\Core\Http\HttpStatus;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\ProfileFieldResource;
 use Semitexa\Platform\User\Application\Payload\Request\ProfileFieldCreatePayload;
@@ -49,7 +50,7 @@ final class ProfileFieldCreateHandler implements TypedHandlerInterface
 
         $domain = $field->toDomain();
 
-        $resource->setStatusCode(201);
+        $resource->setStatusCode(HttpStatus::Created->value);
         $resource->setContext([
             'field' => [
                 'id' => $domain->id,

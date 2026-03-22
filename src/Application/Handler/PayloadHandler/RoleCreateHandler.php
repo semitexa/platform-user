@@ -8,6 +8,7 @@ use Semitexa\Core\Attributes\AsPayloadHandler;
 use Semitexa\Core\Attributes\InjectAsReadonly;
 use Semitexa\Core\Contract\TypedHandlerInterface;
 use Semitexa\Core\Exception\ConflictException;
+use Semitexa\Core\Http\HttpStatus;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\RoleResource;
 use Semitexa\Platform\User\Application\Payload\Request\RoleCreatePayload;
@@ -43,7 +44,7 @@ final class RoleCreateHandler implements TypedHandlerInterface
 
         $domain = $role->toDomain();
 
-        $resource->setStatusCode(201);
+        $resource->setStatusCode(HttpStatus::Created->value);
         $resource->setContext([
             'role' => [
                 'id' => $domain->id,
