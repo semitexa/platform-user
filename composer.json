@@ -1,6 +1,6 @@
 {
     "name": "semitexa/platform-user",
-    "description": "Semitexa Platform User user management, RBAC, dynamic profiles, file storage, activity tracking",
+    "description": "Semitexa Platform User - user management, RBAC, dynamic profiles, storage, and activity tracking",
     "type": "semitexa-module",
     "version": "0.1.6",
     "keywords": [
