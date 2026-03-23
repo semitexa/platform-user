@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Application\Payload\Request;
 
+use Semitexa\Api\Attributes\ApiVersion;
+use Semitexa\Api\Attributes\ExternalApi;
 use Semitexa\Core\Attributes\AsPayload;
 use Semitexa\Core\Http\Response\GenericResponse;
 use Semitexa\Testing\Attributes\TestablePayload;
 use Semitexa\Testing\Strategy\Profile\StandardProfileStrategy;
 
 #[AsPayload(path: '/api/platform/users', methods: ['GET'], responseWith: GenericResponse::class)]
+#[ExternalApi(version: 'v1', description: 'List platform users for machine clients.')]
+#[ApiVersion(version: '1.0.0')]
 #[TestablePayload(strategies: [StandardProfileStrategy::class])]
 class UserListPayload
 {

@@ -1,6 +1,6 @@
 {
     "name": "semitexa/platform-user",
-    "description": "Semitexa Platform User — user management, RBAC, dynamic profiles, file storage, activity tracking",
+    "description": "Semitexa Platform User \u2014 user management, RBAC, dynamic profiles, file storage, activity tracking",
     "type": "semitexa-module",
     "license": "MIT",
     "authors": [
@@ -12,6 +12,7 @@
     "require": {
         "php": "^8.4",
         "semitexa/core": "*",
+        "semitexa/api": "*",
         "semitexa/auth": "*",
         "semitexa/orm": "*",
         "semitexa/ssr": "*",
@@ -30,5 +31,26 @@
             "description": "User management: CRUD, RBAC, dynamic profiles, file storage, activity tracking, WM app"
         }
     },
-    "version": "0.1.8"
+    "version": "0.1.6",
+    "keywords": [
+        "semitexa",
+        "platform",
+        "user",
+        "filesystem",
+        "s3",
+        "minio",
+        "roles",
+        "permissions"
+    ]
+    "version": "0.1.8",
+    "keywords": [
+        "semitexa",
+        "platform",
+        "user",
+        "filesystem",
+        "s3",
+        "minio",
+        "roles",
+        "permissions"
+    ]
 }
