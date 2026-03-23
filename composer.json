@@ -1,6 +1,6 @@
 {
     "name": "semitexa/platform-user",
-    "description": "Semitexa Platform User \u2014 user management, RBAC, dynamic profiles, file storage, activity tracking",
+    "description": "Semitexa Platform User user management, RBAC, dynamic profiles, file storage, activity tracking",
     "type": "semitexa-module",
     "license": "MIT",
     "authors": [
