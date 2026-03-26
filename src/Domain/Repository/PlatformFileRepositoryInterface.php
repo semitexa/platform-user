@@ -10,7 +10,7 @@ interface PlatformFileRepositoryInterface
 {
     public function findById(string $id): ?PlatformFile;
 
-    public function save(PlatformFile $file): void;
+    public function save(object $entity): void;
 
     public function delete(PlatformFile $file): void;
 }

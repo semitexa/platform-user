@@ -18,7 +18,7 @@ interface RoleRepositoryInterface
     /** Returns resource for mutation (save/delete). */
     public function findBySlug(string $slug): ?RoleResource;
 
-    public function save(RoleResource $resource): void;
+    public function save(object $entity): void;
 
     public function delete(RoleResource $resource): void;
 }

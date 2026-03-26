@@ -18,7 +18,7 @@ interface UserRepositoryInterface
     /** @return list<User> Domain objects for read-only listing. */
     public function findAll(int $limit = 100): array;
 
-    public function save(PlatformUserResource $resource): void;
+    public function save(object $entity): void;
 
     public function delete(PlatformUserResource $resource): void;
 

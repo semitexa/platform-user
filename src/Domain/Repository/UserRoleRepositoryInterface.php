@@ -15,7 +15,7 @@ interface UserRoleRepositoryInterface
 
     public function deleteByUserId(string $userId): void;
 
-    public function save(UserRole $role): void;
+    public function save(object $entity): void;
 
     public function delete(UserRole $role): void;
 }

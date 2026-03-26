@@ -15,7 +15,7 @@ interface ProfileFieldRepositoryInterface
 
     public function findBySlug(string $slug): ?ProfileField;
 
-    public function save(ProfileField $field): void;
+    public function save(object $entity): void;
 
     public function delete(ProfileField $field): void;
 }

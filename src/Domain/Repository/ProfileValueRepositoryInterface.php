@@ -14,7 +14,7 @@ interface ProfileValueRepositoryInterface
 
     public function findByUserAndField(string $userId, string $fieldId): ?ProfileValueResource;
 
-    public function save(ProfileValueResource $resource): void;
+    public function save(object $entity): void;
 
     public function deleteByFieldId(string $fieldId): void;
 }
