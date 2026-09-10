@@ -46,7 +46,11 @@ final class UserListCommand extends BaseCommand
         }
 
         $table = new Table($output);
-        $table->setHeaders(['email', 'tenant', 'role', 'status', 'last login', 'locked until']);
+        // 'password' rather than a wider table: an operator who issued a
+        // password needs to see, at a glance, which accounts still owe a change
+        // — otherwise the flag is set and then forgotten, which is the same as
+        // not setting it.
+        $table->setHeaders(['email', 'tenant', 'role', 'status', 'password', 'last login', 'locked until']);
 
         foreach ($users as $user) {
             $table->addRow([
@@ -54,6 +58,7 @@ final class UserListCommand extends BaseCommand
                 $user->getTenantId() !== '' ? $user->getTenantId() : '—',
                 $user->getRole()->value,
                 $user->getStatus()->value,
+                $user->isPasswordIssuedByOperator() ? 'must change' : 'theirs',
                 $user->getLastLoginAt()?->format('Y-m-d H:i') ?? 'never',
                 $user->isLocked() ? (string) $user->getLockedUntil()?->format('Y-m-d H:i') : '—',
             ]);

@@ -34,6 +34,15 @@ final readonly class PlatformUser
         private ?\DateTimeImmutable $lastLoginAt = null,
         private int $failedAttempts = 0,
         private ?\DateTimeImmutable $lockedUntil = null,
+        /**
+         * Someone else chose this password, so its owner has not.
+         *
+         * Named for the fact rather than the consequence: "must change" is what
+         * follows, and a field named after a policy ages badly when the policy
+         * moves. Cleared the moment the owner sets one of their own — see
+         * {@see withPasswordHash()}.
+         */
+        private bool $passwordIssuedByOperator = false,
     ) {}
 
     public function getId(): string
@@ -146,9 +155,33 @@ final readonly class PlatformUser
         return password_needs_rehash($this->passwordHash, $algorithm, $options);
     }
 
+    public function isPasswordIssuedByOperator(): bool
+    {
+        return $this->passwordIssuedByOperator;
+    }
+
+    /**
+     * The owner set their own password, so nothing is owed any more.
+     *
+     * Clearing here rather than at the call site is the point: every path that
+     * sets a hash goes through this, so none of them can forget — and a flag
+     * that survived its own resolution would lock a person in a loop demanding
+     * a change they had just made.
+     */
     public function withPasswordHash(string $passwordHash): self
     {
-        return $this->with(passwordHash: $passwordHash, failedAttempts: 0, clearLock: true);
+        return $this->with(
+            passwordHash: $passwordHash,
+            failedAttempts: 0,
+            clearLock: true,
+            passwordIssuedByOperator: false,
+        );
+    }
+
+    /** An operator issued this password; its owner has to replace it. */
+    public function withPasswordIssuedByOperator(string $passwordHash): self
+    {
+        return $this->withPasswordHash($passwordHash)->with(passwordIssuedByOperator: true);
     }
 
     public function withStatus(UserStatus $status): self
@@ -203,6 +236,7 @@ final readonly class PlatformUser
         ?int $failedAttempts = null,
         ?\DateTimeImmutable $lockedUntil = null,
         bool $clearLock = false,
+        ?bool $passwordIssuedByOperator = null,
     ): self {
         return new self(
             id: $this->id,
@@ -217,6 +251,7 @@ final readonly class PlatformUser
             lastLoginAt: $lastLoginAt ?? $this->lastLoginAt,
             failedAttempts: $failedAttempts ?? $this->failedAttempts,
             lockedUntil: $clearLock ? null : ($lockedUntil ?? $this->lockedUntil),
+            passwordIssuedByOperator: $passwordIssuedByOperator ?? $this->passwordIssuedByOperator,
         );
     }
 }

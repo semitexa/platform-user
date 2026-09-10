@@ -34,6 +34,7 @@ final class PlatformUserMapper implements ResourceModelMapperInterface
             lastLoginAt: $resourceModel->lastLoginAt,
             failedAttempts: $resourceModel->failedAttempts,
             lockedUntil: $resourceModel->lockedUntil,
+            passwordIssuedByOperator: $resourceModel->passwordIssuedByOperator,
         );
     }
 
@@ -54,6 +55,7 @@ final class PlatformUserMapper implements ResourceModelMapperInterface
             lastLoginAt: $domainModel->getLastLoginAt(),
             failedAttempts: $domainModel->getFailedAttempts(),
             lockedUntil: $domainModel->getLockedUntil(),
+            passwordIssuedByOperator: $domainModel->isPasswordIssuedByOperator(),
         );
     }
 }
