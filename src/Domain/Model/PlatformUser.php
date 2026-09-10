@@ -155,6 +155,17 @@ final readonly class PlatformUser
         return password_needs_rehash($this->passwordHash, $algorithm, $options);
     }
 
+    /**
+     * True while the account still carries a password somebody else chose.
+     *
+     * DELIBERATELY NOT part of {@see canAuthenticate()}. Refusing the sign-in
+     * would leave the person unable to reach the one thing that clears the
+     * flag, so this is an obligation on the SURFACE: whatever admits the
+     * session must allow the password change and nothing else until
+     * {@see withPasswordHash()} clears it. semitexa/os does that in
+     * OsAdminGate; a console built on this package without such a gate lets a
+     * flagged account work normally, and the flag then means nothing.
+     */
     public function isPasswordIssuedByOperator(): bool
     {
         return $this->passwordIssuedByOperator;
