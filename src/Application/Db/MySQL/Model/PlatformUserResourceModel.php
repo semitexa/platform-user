@@ -54,5 +54,16 @@ final readonly class PlatformUserResourceModel
 
         #[Column(name: 'locked_until', type: MySqlType::Datetime, nullable: true)]
         public ?\DateTimeImmutable $lockedUntil,
+
+        /**
+         * An operator chose this password, so the person it belongs to has not.
+         *
+         * Defaults to false: an account whose password was never issued by
+         * someone else has nothing to replace, and a column that defaulted the
+         * other way would demand a change from every existing account on the
+         * first deploy.
+         */
+        #[Column(name: 'password_issued_by_operator', type: MySqlType::Boolean, default: false)]
+        public bool $passwordIssuedByOperator = false,
     ) {}
 }

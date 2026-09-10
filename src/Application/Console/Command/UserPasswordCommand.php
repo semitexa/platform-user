@@ -38,7 +38,13 @@ final class UserPasswordCommand extends BaseCommand
             ->setDescription('Set a user password (also clears any lockout).')
             ->addOption('email', null, InputOption::VALUE_REQUIRED, 'Whose password to set')
             ->addOption('tenant', null, InputOption::VALUE_REQUIRED, 'Tenant id, when the address exists for more than one', '')
-            ->addOption('password', null, InputOption::VALUE_REQUIRED, 'New password (prompted for when omitted)');
+            ->addOption('password', null, InputOption::VALUE_REQUIRED, 'New password (prompted for when omitted)')
+            ->addOption(
+                'must-change',
+                null,
+                InputOption::VALUE_NONE,
+                'Require the account to replace this password before using the console',
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -70,8 +76,21 @@ final class UserPasswordCommand extends BaseCommand
             return Command::INVALID;
         }
 
-        $this->users->update($user->withPasswordHash($hash));
-        $output->writeln(sprintf('<info>Password set for %s.</info>', $user->getEmail()));
+        // Not the default. An operator resetting their OWN password, or
+        // unlocking an account for someone who then keeps that password, has
+        // nothing to demand — and a flag set on every reset would be one people
+        // learn to click past.
+        $mustChange = (bool) $input->getOption('must-change');
+
+        $this->users->update($mustChange
+            ? $user->withPasswordIssuedByOperator($hash)
+            : $user->withPasswordHash($hash));
+
+        $output->writeln(sprintf(
+            '<info>Password set for %s.%s</info>',
+            $user->getEmail(),
+            $mustChange ? ' They must replace it before using the console.' : '',
+        ));
 
         return Command::SUCCESS;
     }
