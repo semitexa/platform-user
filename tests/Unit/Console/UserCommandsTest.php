@@ -91,24 +91,24 @@ final class UserCommandsTest extends TestCase
         $owner = $this->runCommand(new UserAddCommand(), ['--email' => 'root@example.test', '--password' => 'correct horse', '--role' => 'owner']);
 
         self::assertSame(Command::SUCCESS, $owner->getStatusCode(), $owner->getDisplay());
-        self::assertSame(UserRole::Owner, $this->users->findByEmail('root@example.test')?->getRole());
+        self::assertSame(UserRole::Owner, $this->account('root@example.test')->getRole());
     }
 
     #[Test]
     public function user_password_replaces_the_password_and_clears_a_lockout(): void
     {
         $this->users->save((new PlatformUser('u-1', 'ada@example.test', $this->hasher->hash('old password!'), tenantId: 't-1'))->withFailedLogin(1, 900));
-        self::assertTrue($this->users->findByEmail('ada@example.test')?->isLocked());
+        self::assertTrue($this->account('ada@example.test')->isLocked());
 
         $set = $this->runCommand(new UserPasswordCommand(), ['--email' => 'ada@example.test', '--password' => 'new password!']);
 
-        $user = $this->users->findByEmail('ada@example.test');
+        $user = $this->account('ada@example.test');
         self::assertSame(Command::SUCCESS, $set->getStatusCode(), $set->getDisplay());
-        self::assertTrue($user?->verifyPassword('new password!'));
-        self::assertFalse($user?->verifyPassword('old password!'));
-        self::assertFalse($user?->isLocked(), 'the description promises the lockout goes too');
-        self::assertSame(0, $user?->getFailedAttempts());
-        self::assertFalse($user?->isPasswordIssuedByOperator(), 'not demanded unless asked for');
+        self::assertTrue($user->verifyPassword('new password!'));
+        self::assertFalse($user->verifyPassword('old password!'));
+        self::assertFalse($user->isLocked(), 'the description promises the lockout goes too');
+        self::assertSame(0, $user->getFailedAttempts());
+        self::assertFalse($user->isPasswordIssuedByOperator(), 'not demanded unless asked for');
     }
 
     #[Test]
@@ -118,7 +118,7 @@ final class UserCommandsTest extends TestCase
 
         $set = $this->runCommand(new UserPasswordCommand(), ['--email' => 'ada@example.test', '--password' => 'issued password', '--must-change' => true]);
 
-        self::assertTrue($this->users->findByEmail('ada@example.test')?->isPasswordIssuedByOperator());
+        self::assertTrue($this->account('ada@example.test')->isPasswordIssuedByOperator());
         self::assertStringContainsString('must replace it', $set->getDisplay());
     }
 
@@ -134,8 +134,8 @@ final class UserCommandsTest extends TestCase
         self::assertSame(Command::FAILURE, $ambiguous->getStatusCode());
         self::assertStringContainsString('Pass --tenant', $ambiguous->getDisplay());
         self::assertSame(Command::SUCCESS, $named->getStatusCode());
-        self::assertTrue($this->users->findByEmail('ada@example.test', 't-1')?->verifyPassword('first password'), 'the other site is untouched');
-        self::assertTrue($this->users->findByEmail('ada@example.test', 't-2')?->verifyPassword('new password!'));
+        self::assertTrue($this->account('ada@example.test', 't-1')->verifyPassword('first password'), 'the other site is untouched');
+        self::assertTrue($this->account('ada@example.test', 't-2')->verifyPassword('new password!'));
     }
 
     #[Test]
@@ -144,18 +144,18 @@ final class UserCommandsTest extends TestCase
         $this->users->save(new PlatformUser('u-1', 'ada@example.test', $this->hasher->hash('correct horse'), tenantId: 't-1'));
 
         $off = $this->runCommand(new UserDisableCommand(), ['--email' => 'ada@example.test']);
-        $disabled = $this->users->findByEmail('ada@example.test');
+        $disabled = $this->account('ada@example.test');
         $listed = $this->runCommand(new UserListCommand(), []);
         $listedAll = $this->runCommand(new UserListCommand(), ['--all' => true]);
         $on = $this->runCommand(new UserDisableCommand(), ['--email' => 'ada@example.test', '--enable' => true]);
 
         self::assertSame(Command::SUCCESS, $off->getStatusCode());
-        self::assertSame(UserStatus::Disabled, $disabled?->getStatus());
-        self::assertFalse($disabled?->canAuthenticate(), 'a disabled account cannot sign in');
+        self::assertSame(UserStatus::Disabled, $disabled->getStatus());
+        self::assertFalse($disabled->canAuthenticate(), 'a disabled account cannot sign in');
         self::assertStringContainsString('No users.', $listed->getDisplay(), 'disabled accounts are hidden by default');
         self::assertStringContainsString('disabled', $listedAll->getDisplay());
         self::assertSame(Command::SUCCESS, $on->getStatusCode());
-        self::assertTrue($this->users->findByEmail('ada@example.test')?->canAuthenticate());
+        self::assertTrue($this->account('ada@example.test')->canAuthenticate());
     }
 
     #[Test]
@@ -171,6 +171,14 @@ final class UserCommandsTest extends TestCase
         self::assertMatchesRegularExpression('/root@example\.test\s*\|\s*—\s*\|\s*owner\s*\|\s*active\s*\|\s*must change/', $all);
         self::assertStringContainsString('ada@example.test', $one);
         self::assertStringNotContainsString('root@example.test', $one);
+    }
+
+    private function account(string $email, ?string $tenantId = null): PlatformUser
+    {
+        $user = $this->users->findByEmail($email, $tenantId);
+        self::assertNotNull($user, "no single account for {$email}" . ($tenantId !== null ? " on {$tenantId}" : ''));
+
+        return $user;
     }
 
     /** @param array<string, mixed> $options */
