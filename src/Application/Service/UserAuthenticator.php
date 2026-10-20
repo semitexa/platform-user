@@ -80,7 +80,7 @@ final class UserAuthenticator
         // a correct password is the only moment we hold the plaintext needed
         // to upgrade it.
         if ($this->hasher->needsRehash($signedIn->getPasswordHash())) {
-            $signedIn = $signedIn->withPasswordHash($this->hasher->hash($password));
+            $signedIn = $signedIn->withRehashedPassword($this->hasher->hash($password));
         }
 
         $this->persist($signedIn);

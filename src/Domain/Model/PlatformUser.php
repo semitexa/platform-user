@@ -43,6 +43,20 @@ final readonly class PlatformUser
          * {@see withPasswordHash()}.
          */
         private bool $passwordIssuedByOperator = false,
+        /**
+         * Which password a session was signed in with. Every new password the
+         * account gets raises it, and a session that recorded a lower one is
+         * over: changing or resetting a password is what someone does when
+         * they suspect another session is not theirs.
+         */
+        private int $credentialVersion = 0,
+        /**
+         * The row as it was read, for the store's optimistic lock: a write
+         * made from an older read is refused instead of overwriting a newer
+         * one. Without it a failed sign-in that read the row before a password
+         * change wrote the old hash and credential version back after it.
+         */
+        private int $rowVersion = 0,
     ) {}
 
     public function getId(): string
@@ -145,17 +159,6 @@ final readonly class PlatformUser
     }
 
     /**
-     * True when the stored hash was made with weaker parameters than the ones
-     * currently configured — the caller should re-hash on the next successful
-     * sign-in.
-     */
-    /** @param array<string, mixed> $options */
-    public function needsRehash(string|int|null $algorithm = PASSWORD_DEFAULT, array $options = []): bool
-    {
-        return password_needs_rehash($this->passwordHash, $algorithm, $options);
-    }
-
-    /**
      * True while the account still carries a password somebody else chose.
      *
      * DELIBERATELY NOT part of {@see canAuthenticate()}. Refusing the sign-in
@@ -169,6 +172,16 @@ final readonly class PlatformUser
     public function isPasswordIssuedByOperator(): bool
     {
         return $this->passwordIssuedByOperator;
+    }
+
+    public function getCredentialVersion(): int
+    {
+        return $this->credentialVersion;
+    }
+
+    public function getRowVersion(): int
+    {
+        return $this->rowVersion;
     }
 
     /**
@@ -186,7 +199,19 @@ final readonly class PlatformUser
             failedAttempts: 0,
             clearLock: true,
             passwordIssuedByOperator: false,
+            credentialVersion: $this->credentialVersion + 1,
         );
+    }
+
+    /**
+     * The SAME password, hashed with today's cost parameters. Not a new
+     * password: it ends no session and settles no obligation — through
+     * withPasswordHash() a sign-in that upgraded an operator-issued hash
+     * cleared the flag demanding the owner replace it.
+     */
+    public function withRehashedPassword(string $passwordHash): self
+    {
+        return $this->with(passwordHash: $passwordHash);
     }
 
     /** An operator issued this password; its owner has to replace it. */
@@ -248,6 +273,7 @@ final readonly class PlatformUser
         ?\DateTimeImmutable $lockedUntil = null,
         bool $clearLock = false,
         ?bool $passwordIssuedByOperator = null,
+        ?int $credentialVersion = null,
     ): self {
         return new self(
             id: $this->id,
@@ -263,6 +289,8 @@ final readonly class PlatformUser
             failedAttempts: $failedAttempts ?? $this->failedAttempts,
             lockedUntil: $clearLock ? null : ($lockedUntil ?? $this->lockedUntil),
             passwordIssuedByOperator: $passwordIssuedByOperator ?? $this->passwordIssuedByOperator,
+            credentialVersion: $credentialVersion ?? $this->credentialVersion,
+            rowVersion: $this->rowVersion,
         );
     }
 }

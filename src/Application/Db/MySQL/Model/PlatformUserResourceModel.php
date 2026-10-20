@@ -8,6 +8,7 @@ use Semitexa\Orm\Adapter\MySqlType;
 use Semitexa\Orm\Attribute\Column;
 use Semitexa\Orm\Attribute\FromTable;
 use Semitexa\Orm\Attribute\PrimaryKey;
+use Semitexa\Orm\Attribute\Version;
 use Semitexa\Orm\Metadata\HasColumnReferences;
 use Semitexa\Orm\Metadata\HasRelationReferences;
 
@@ -65,5 +66,18 @@ final readonly class PlatformUserResourceModel
          */
         #[Column(name: 'password_issued_by_operator', type: MySqlType::Boolean, default: false)]
         public bool $passwordIssuedByOperator = false,
+
+        /** Raised by every new password; a session holding a lower one is over. */
+        #[Column(name: 'credential_version', type: MySqlType::Int, default: 0)]
+        public int $credentialVersion = 0,
+
+        /**
+         * Optimistic lock: every update guards on the version it read. A
+         * sign-in's bookkeeping spends a whole password hash between its read
+         * and its write, long enough for a password change to land in between.
+         */
+        #[Version]
+        #[Column(name: 'row_version', type: MySqlType::Int, default: 0)]
+        public int $rowVersion = 0,
     ) {}
 }

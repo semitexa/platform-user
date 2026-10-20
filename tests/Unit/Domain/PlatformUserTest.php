@@ -105,6 +105,25 @@ final class PlatformUserTest extends TestCase
     }
 
     #[Test]
+    public function every_new_password_raises_the_credential_version_and_a_rehash_does_not(): void
+    {
+        $user = self::user();
+        $operatorIssued = $user->withPasswordIssuedByOperator(password_hash('issued-by-operator', PASSWORD_BCRYPT, ['cost' => 4]));
+        $chosen = $operatorIssued->withPasswordHash(password_hash('chosen-by-owner', PASSWORD_BCRYPT, ['cost' => 4]));
+
+        self::assertSame(0, $user->getCredentialVersion());
+        self::assertSame(1, $operatorIssued->getCredentialVersion());
+        self::assertSame(2, $chosen->getCredentialVersion());
+
+        // Same password, new cost: no session ends and the owner still owes
+        // their own password (a rehash through withPasswordHash cleared it).
+        $rehashed = $operatorIssued->withRehashedPassword(password_hash('issued-by-operator', PASSWORD_BCRYPT, ['cost' => 5]));
+        self::assertSame(1, $rehashed->getCredentialVersion());
+        self::assertTrue($rehashed->isPasswordIssuedByOperator());
+        self::assertTrue($rehashed->verifyPassword('issued-by-operator'));
+    }
+
+    #[Test]
     public function the_display_name_falls_back_to_the_address(): void
     {
         self::assertSame('admin@example.test', self::user()->getDisplayName());
