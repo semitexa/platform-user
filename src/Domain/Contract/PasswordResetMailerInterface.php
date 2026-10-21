@@ -9,8 +9,10 @@ use Semitexa\Platform\User\Domain\Model\PlatformUser;
 /**
  * Delivers a password-reset link to the account's owner.
  *
- * The project binds one (#[SatisfiesServiceContract]): it knows the site's
- * address, the page that serves the reset form, and how it sends mail. The
+ * MailPasswordResetMailer is the default (semitexa/mail, PLATFORM_USER_RESET_URL);
+ * a project binds its own (#[SatisfiesServiceContract]) for other wording, or
+ * sites on different hosts: it knows the site's address, the page that serves
+ * the reset form, and how it sends mail. The
  * link it builds carries $token as given; the token is a secret that resets
  * the password until $expiresAt, so it belongs in the mail and nowhere else
  * (not in a log line, not in an analytics event).

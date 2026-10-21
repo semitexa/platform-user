@@ -17,7 +17,7 @@ use Semitexa\Platform\User\Domain\Model\PlatformUser;
 /**
  * "Forgot password" behind the platform.forgot-password and
  * platform.reset-password components: a single-use link that expires, sent by
- * the project's PasswordResetMailerInterface.
+ * the PasswordResetMailerInterface bound (MailPasswordResetMailer by default).
  *
  * request() answers nothing: an unknown address, a disabled account and an
  * account over its request limit look exactly like a sent link, or the form
@@ -57,7 +57,8 @@ final class PasswordResetService
 
     public function request(string $email, ?string $tenantId = null, ?\DateTimeImmutable $now = null): void
     {
-        if ($this->mailer instanceof UnconfiguredPasswordResetMailer) {
+        if ($this->mailer instanceof UnconfiguredPasswordResetMailer
+            || ($this->mailer instanceof MailPasswordResetMailer && !$this->mailer->isConfigured())) {
             throw UnconfiguredPasswordResetMailer::refusal();
         }
 

@@ -27,6 +27,7 @@ bin/semitexa orm:sync
   - `bin/semitexa user:list [--tenant=…] [--all]`;
   - `bin/semitexa user:password --email=…` (also clears a lockout);
   - `bin/semitexa user:disable --email=… [--enable]`.
+- Password reset: `PasswordResetService` (single-use, expiring links) and `MailPasswordResetMailer`, which mails the link once `PLATFORM_USER_RESET_URL` (a URL with `{token}`) is set; platform-ui ships the forms' actions.
 - Stored roles for semitexa/rbac: the `platform_role` and `platform_user_role` tables and `StoredRolePermissionProvider`, managed with `role:create`, `role:grant`, `role:assign`, `role:list` and `role:delete` (a site's role grants only on that site; see the RBAC guide).
 
 ## Documentation
