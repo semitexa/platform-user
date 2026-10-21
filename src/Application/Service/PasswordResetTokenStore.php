@@ -33,7 +33,7 @@ final class PasswordResetTokenStore
     {
         $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
 
-        $this->orm()->getAdapter()->execute(sprintf(
+        $this->orm()->getQueryAdapter()->execute(sprintf(
             'INSERT INTO %s (token_hash, user_id, tenant_id, created_at, expires_at, used_at)'
             . ' VALUES (:token_hash, :user_id, :tenant_id, :created_at, :expires_at, NULL)',
             SqlIdentifier::quote(self::TABLE),
@@ -51,7 +51,7 @@ final class PasswordResetTokenStore
     /** Links issued to this account at or after $since, used or not. */
     public function countIssuedSince(string $userId, \DateTimeImmutable $since): int
     {
-        $row = $this->orm()->getAdapter()->execute(sprintf(
+        $row = $this->orm()->getQueryAdapter()->execute(sprintf(
             'SELECT COUNT(*) AS n FROM %s WHERE user_id = :user_id AND created_at >= :since',
             SqlIdentifier::quote(self::TABLE),
         ), [
@@ -76,7 +76,7 @@ final class PasswordResetTokenStore
             return null;
         }
 
-        $adapter = $this->orm()->getAdapter();
+        $adapter = $this->orm()->getQueryAdapter();
         $hash = self::hash($token);
 
         $claimed = $adapter->execute(sprintf(
@@ -102,7 +102,7 @@ final class PasswordResetTokenStore
     /** Use up every live link of this account: the password they would reset has just changed. */
     public function revokeAll(string $userId, \DateTimeImmutable $now): int
     {
-        return $this->orm()->getAdapter()->execute(sprintf(
+        return $this->orm()->getQueryAdapter()->execute(sprintf(
             'UPDATE %s SET used_at = :now WHERE user_id = :user_id AND used_at IS NULL',
             SqlIdentifier::quote(self::TABLE),
         ), [
@@ -117,7 +117,7 @@ final class PasswordResetTokenStore
      */
     public function purgeExpiredBefore(\DateTimeImmutable $before): int
     {
-        return $this->orm()->getAdapter()->execute(sprintf(
+        return $this->orm()->getQueryAdapter()->execute(sprintf(
             'DELETE FROM %s WHERE expires_at < :before',
             SqlIdentifier::quote(self::TABLE),
         ), ['before' => $before->format(self::DATETIME)])->rowCount;
