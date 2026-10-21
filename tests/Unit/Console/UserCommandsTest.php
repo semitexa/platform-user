@@ -182,6 +182,16 @@ final class UserCommandsTest extends TestCase
     }
 
     /** @param array<string, mixed> $options */
+    /** An owner belongs to no site: one bound to a site was read both ways. */
+    #[Test]
+    public function an_owner_is_not_made_for_a_site(): void
+    {
+        $add = $this->runCommand(new UserAddCommand(), ['--email' => 'boss@example.test', '--password' => 'correct horse', '--role' => 'owner', '--tenant' => 'museum']);
+
+        self::assertSame(Command::INVALID, $add->getStatusCode());
+        self::assertNull($this->users->findByEmail('boss@example.test'));
+    }
+
     private function runCommand(Command $command, array $options): CommandTester
     {
         foreach (['users' => $this->users, 'hasher' => $this->hasher] as $property => $value) {
