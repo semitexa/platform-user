@@ -11,6 +11,7 @@ use Semitexa\Core\Log\FallbackErrorLogger;
 use Semitexa\Core\Tenant\TenantContextAccess;
 use Semitexa\Core\Tenant\TenantContextStoreInterface;
 use Semitexa\Platform\User\Domain\Contract\PlatformUserRepositoryInterface;
+use Semitexa\Platform\User\Domain\Service\SiteAccess;
 use Semitexa\Rbac\Domain\Contract\PermissionProviderInterface;
 
 /**
@@ -61,7 +62,7 @@ final class StoredRolePermissionProvider implements PermissionProviderInterface
                 // root site where data is not filtered by tenant: a shared
                 // role given to site A's editor applied on site B (a path or
                 // query tenant), and on the root site to every site's data.
-                if ($user->getTenantId() !== '' && $user->getTenantId() !== $tenantId) {
+                if (!SiteAccess::allows($user, $context)) {
                     return [];
                 }
             }
