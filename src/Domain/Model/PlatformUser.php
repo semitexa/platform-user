@@ -252,14 +252,18 @@ final readonly class PlatformUser
      */
     public function withFailedLogin(int $maxAttempts, int $lockSeconds, ?\DateTimeImmutable $now = null): self
     {
-        $attempts = $this->failedAttempts + 1;
         $now ??= new \DateTimeImmutable();
+        // A lockout that ran out starts the count again, or one miss after it
+        // locked again for the full window, for good.
+        $expired = $this->lockedUntil !== null && $this->lockedUntil <= $now;
+        $attempts = ($expired ? 0 : $this->failedAttempts) + 1;
 
         return $this->with(
             failedAttempts: $attempts,
             lockedUntil: $attempts >= $maxAttempts
                 ? $now->add(new \DateInterval('PT' . max(1, $lockSeconds) . 'S'))
-                : $this->lockedUntil,
+                : ($expired ? null : $this->lockedUntil),
+            clearLock: $expired && $attempts < $maxAttempts,
         );
     }
 

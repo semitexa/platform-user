@@ -17,8 +17,10 @@ use Semitexa\Rbac\Domain\Contract\PermissionProviderInterface;
  * What the user's stored roles grant (RoleStore), for semitexa/rbac, on the
  * site the request is for: the shared roles and that site's own, never
  * another site's — one session can reach several tenants (a path or query
- * tenant, a cookie on the parent domain). On the root site, where data is not
- * filtered by tenant, the shared roles only. With no tenancy at all (no
+ * tenant, a cookie on the parent domain). A user bound to a site holds
+ * nothing anywhere else, its shared roles included; an owner (no site) holds
+ * the shared roles everywhere. On the root site, where data is not filtered
+ * by tenant, the shared roles only, and only for an owner. With no tenancy at all (no
  * context: a single-site install, the CLI), the user's own site. Only a
  * platform-user account has stored roles. Providers are additive.
  */
@@ -47,14 +49,21 @@ final class StoredRolePermissionProvider implements PermissionProviderInterface
         }
         $context = isset($this->tenants) ? $this->tenants->tryGet() : null;
         try {
+            $user = $this->users->findById($userId);
+            if ($user === null) {
+                return [];
+            }
             if ($context === null) {
-                $user = $this->users->findById($userId);
-                $tenantId = $user?->getTenantId();
+                $tenantId = $user->getTenantId();
             } else {
                 $tenantId = TenantContextAccess::isDefault($context) ? '' : (TenantContextAccess::tenantId($context) ?? '');
-            }
-            if ($tenantId === null) {
-                return [];
+                // A site's user holds nothing on another site, nor on the
+                // root site where data is not filtered by tenant: a shared
+                // role given to site A's editor applied on site B (a path or
+                // query tenant), and on the root site to every site's data.
+                if ($user->getTenantId() !== '' && $user->getTenantId() !== $tenantId) {
+                    return [];
+                }
             }
 
             return $this->roles->permissionsOf($userId, $tenantId);

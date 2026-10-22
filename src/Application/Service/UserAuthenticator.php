@@ -8,6 +8,7 @@ use Semitexa\Core\Attribute\AsService;
 use Semitexa\Core\Attribute\Config;
 use Semitexa\Core\Attribute\InjectAsReadonly;
 use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
+use Semitexa\Platform\User\Domain\Contract\FailedLoginCounterInterface;
 use Semitexa\Platform\User\Domain\Contract\PlatformUserRepositoryInterface;
 use Semitexa\Platform\User\Domain\Enum\AuthFailure;
 use Semitexa\Platform\User\Domain\Model\AuthAttempt;
@@ -32,6 +33,9 @@ final class UserAuthenticator
     /** Failures before the account stops accepting attempts. */
     #[Config(env: 'PLATFORM_USER_MAX_ATTEMPTS', default: 5)]
     protected int $maxAttempts;
+
+    /** A hash with the current cost, verified against when there is no real one to check. */
+    private ?string $timingHash = null;
 
     /** How long the lockout lasts, in seconds. */
     #[Config(env: 'PLATFORM_USER_LOCK_SECONDS', default: 900)]
@@ -65,9 +69,31 @@ final class UserAuthenticator
             return AuthAttempt::denied(AuthFailure::Locked, $user->getLockedUntil());
         }
 
+        // The attempt is taken before the password is checked: once the
+        // account has used up its attempts, nothing more is checked, however
+        // many guesses arrive at once.
+        if ($this->users instanceof FailedLoginCounterInterface) {
+            try {
+                $reserved = $this->users->reserveLoginAttempt($user, $this->maxAttempts ?? 5);
+            } catch (\Throwable) {
+                $reserved = true; // see persist(): bookkeeping never decides alone
+            }
+            if (!$reserved) {
+                // Attempts used up but no lock written (its write failed, or
+                // the request was cancelled in between) left the account
+                // refused with no end: written now, it ends like any lockout.
+                try {
+                    $this->users->lockIfExhausted($user, $this->maxAttempts ?? 5, $this->lockSeconds ?? 900);
+                } catch (\Throwable) {
+                }
+                $this->burnTime($password);
+
+                return AuthAttempt::denied(AuthFailure::Locked);
+            }
+        }
+
         if (!$user->verifyPassword($password)) {
-            $failed = $user->withFailedLogin($this->maxAttempts ?? 5, $this->lockSeconds ?? 900);
-            $this->persist($failed);
+            $failed = $this->recordFailure($user);
 
             return $failed->isLocked()
                 ? AuthAttempt::denied(AuthFailure::Locked, $failed->getLockedUntil())
@@ -101,13 +127,39 @@ final class UserAuthenticator
         }
     }
 
+    /** The failure as counted by the database where it can be; from the row in memory otherwise. */
+    private function recordFailure(\Semitexa\Platform\User\Domain\Model\PlatformUser $user): \Semitexa\Platform\User\Domain\Model\PlatformUser
+    {
+        $max = $this->maxAttempts ?? 5;
+        $seconds = $this->lockSeconds ?? 900;
+        if ($this->users instanceof FailedLoginCounterInterface) {
+            try {
+                // Already counted when the attempt was taken.
+                return $this->users->lockIfExhausted($user, $max, $seconds) ?? $user;
+            } catch (\Throwable) {
+                return $user; // see persist()
+            }
+        }
+        $failed = $user->withFailedLogin($max, $seconds);
+        $this->persist($failed);
+
+        return $failed;
+    }
+
+    /**
+     * Spend what checking a real password spends, whatever was typed: hashing
+     * the input threw at once for a password too short to be accepted, so an
+     * unknown address answered in microseconds and a known one in a tenth of
+     * a second — enough to tell which addresses have accounts.
+     */
     private function burnTime(#[\SensitiveParameter] string $password): void
     {
         try {
-            $this->hasher->hash($password === '' ? 'timing-equalizer' : $password);
+            // Made once, with the cost real hashes have, then only verified.
+            $this->timingHash ??= $this->hasher->hash('timing-equalizer-not-a-password');
         } catch (\Throwable) {
-            // A rejected (e.g. too short) password still cost the caller nothing
-            // observable; nothing to do.
+            return;
         }
+        password_verify($password, $this->timingHash);
     }
 }

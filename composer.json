@@ -34,6 +34,11 @@
         "semitexa-module": {
             "name": "platform-user",
             "description": "Identity store: users, password credentials, roles, tenant binding"
+        },
+        "semitexa": {
+            "floors": {
+                "semitexa/auth": "next"
+            }
         }
     },
     "keywords": [

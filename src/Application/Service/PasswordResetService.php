@@ -97,7 +97,7 @@ final class PasswordResetService
         }
 
         $expiresAt = $now->modify("+{$ttl} seconds");
-        $token = $this->tokens->issue($user->getId(), $user->getTenantId(), $now, $expiresAt);
+        $token = $this->tokens->issue($user->getId(), $user->getTenantId(), $now, $expiresAt, $user->getCredentialVersion());
         $this->mailer->sendResetLink($user, $token, $expiresAt);
     }
 
@@ -120,6 +120,13 @@ final class PasswordResetService
 
         $user = $this->users->findById($claimed['user_id']);
         if ($user === null || !$user->getStatus()->canAuthenticate()) {
+            return PasswordResetResult::invalidToken();
+        }
+        // A password set since the link was sent — changed in the console, by
+        // user:password, or by another link — voids it: only the reset flow
+        // revoked links, so an attacker's live link outlived a change meant
+        // to lock them out.
+        if ($claimed['credential_version'] !== $user->getCredentialVersion()) {
             return PasswordResetResult::invalidToken();
         }
 

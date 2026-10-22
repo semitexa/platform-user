@@ -65,6 +65,17 @@ final class PlatformUserTest extends TestCase
         self::assertTrue($expired->canAuthenticate());
     }
 
+    /** One miss after a lockout ran out locked again for the full window: one request per window kept anybody out. */
+    #[Test]
+    public function a_miss_after_a_lockout_ran_out_starts_the_count_again(): void
+    {
+        $after = self::user(failedAttempts: 5, lockedUntil: new \DateTimeImmutable('-1 second'))->withFailedLogin(maxAttempts: 5, lockSeconds: 900);
+
+        self::assertSame(1, $after->getFailedAttempts());
+        self::assertFalse($after->isLocked());
+        self::assertNull($after->getLockedUntil());
+    }
+
     #[Test]
     public function unrelated_edits_do_not_quietly_lift_an_active_lock(): void
     {

@@ -29,13 +29,13 @@ final class PasswordResetTokenStore
     protected OrmManager $orm;
 
     /** @return string the token for the link; it exists nowhere else afterwards */
-    public function issue(string $userId, string $tenantId, \DateTimeImmutable $now, \DateTimeImmutable $expiresAt): string
+    public function issue(string $userId, string $tenantId, \DateTimeImmutable $now, \DateTimeImmutable $expiresAt, int $credentialVersion = 0): string
     {
         $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
 
         $this->orm()->getQueryAdapter()->execute(sprintf(
-            'INSERT INTO %s (token_hash, user_id, tenant_id, created_at, expires_at, used_at)'
-            . ' VALUES (:token_hash, :user_id, :tenant_id, :created_at, :expires_at, NULL)',
+            'INSERT INTO %s (token_hash, user_id, tenant_id, created_at, expires_at, used_at, credential_version)'
+            . ' VALUES (:token_hash, :user_id, :tenant_id, :created_at, :expires_at, NULL, :credential_version)',
             SqlIdentifier::quote(self::TABLE),
         ), [
             'token_hash' => self::hash($token),
@@ -43,6 +43,7 @@ final class PasswordResetTokenStore
             'tenant_id'  => $tenantId,
             'created_at' => $now->format(self::DATETIME),
             'expires_at' => $expiresAt->format(self::DATETIME),
+            'credential_version' => $credentialVersion,
         ]);
 
         return $token;
@@ -67,7 +68,7 @@ final class PasswordResetTokenStore
      * the link is live, so of two requests racing on one link exactly one gets
      * the row count 1: a read-then-write would let both through.
      *
-     * @return array{user_id: string, tenant_id: string}|null null for an
+     * @return array{user_id: string, tenant_id: string, credential_version: int}|null null for an
      *         unknown, expired or already used link
      */
     public function claim(#[\SensitiveParameter] string $token, \DateTimeImmutable $now): ?array
@@ -92,11 +93,15 @@ final class PasswordResetTokenStore
         }
 
         $row = $adapter->execute(sprintf(
-            'SELECT user_id, tenant_id FROM %s WHERE token_hash = :token_hash',
+            'SELECT user_id, tenant_id, credential_version FROM %s WHERE token_hash = :token_hash',
             SqlIdentifier::quote(self::TABLE),
         ), ['token_hash' => $hash])->fetchOne();
 
-        return $row === null ? null : ['user_id' => (string) $row['user_id'], 'tenant_id' => (string) $row['tenant_id']];
+        return $row === null ? null : [
+            'user_id' => (string) $row['user_id'],
+            'tenant_id' => (string) $row['tenant_id'],
+            'credential_version' => (int) ($row['credential_version'] ?? 0),
+        ];
     }
 
     /** Use up every live link of this account: the password they would reset has just changed. */

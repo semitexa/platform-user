@@ -46,5 +46,9 @@ final readonly class PasswordResetTokenResourceModel
 
         #[Column(name: 'used_at', type: MySqlType::Datetime, nullable: true)]
         public ?\DateTimeImmutable $usedAt = null,
+
+        /** The account's credential version when the link was sent: a password set any other way since voids it. */
+        #[Column(name: 'credential_version', type: MySqlType::Int, default: 0)]
+        public int $credentialVersion = 0,
     ) {}
 }

@@ -61,11 +61,11 @@ final class PasswordResetTokenStoreMySqlTest extends TestCase
         // Far in the past: purgeExpiredBefore() below must find nothing of anyone else's.
         $now = new \DateTimeImmutable('2001-01-01 12:00:00');
         $u = $this->userId;
-        $live = $this->store->issue($u, 'regmus', $now, $now->modify('+1 hour'));
+        $live = $this->store->issue($u, 'regmus', $now, $now->modify('+1 hour'), credentialVersion: 3);
         $expired = $this->store->issue($u, 'regmus', $now, $now->modify('+1 minute'));
         $revoked = $this->store->issue($u, 'regmus', $now, $now->modify('+1 hour'));
 
-        self::assertSame(['user_id' => $u, 'tenant_id' => 'regmus'], $this->store->claim($live, $now->modify('+5 minutes')));
+        self::assertSame(['user_id' => $u, 'tenant_id' => 'regmus', 'credential_version' => 3], $this->store->claim($live, $now->modify('+5 minutes')));
         self::assertNull($this->store->claim($live, $now->modify('+5 minutes')), 'the same second, the second claim');
         self::assertNull($this->store->claim($expired, $now->modify('+2 minutes')));
         self::assertSame(3, $this->store->countIssuedSince($u, $now));

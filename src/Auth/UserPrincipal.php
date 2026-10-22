@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Semitexa\Platform\User\Auth;
 
+use Semitexa\Auth\Domain\Contract\CredentialStampedInterface;
 use Semitexa\Core\Auth\AuthenticatableInterface;
 use Semitexa\Platform\User\Domain\Model\PlatformUser;
 
@@ -13,7 +14,7 @@ use Semitexa\Platform\User\Domain\Model\PlatformUser;
  * Handlers reach the tenant and role through this rather than re-reading the
  * database: `$context->authResult?->user instanceof UserPrincipal`.
  */
-final readonly class UserPrincipal implements AuthenticatableInterface
+final readonly class UserPrincipal implements AuthenticatableInterface, CredentialStampedInterface
 {
     public function __construct(
         public PlatformUser $user,
@@ -43,6 +44,12 @@ final readonly class UserPrincipal implements AuthenticatableInterface
     public function isOwner(): bool
     {
         return $this->user->isOwner();
+    }
+
+    /** Raised by every new password: a session signed in with an older one ends (SessionAuthHandler). */
+    public function credentialStamp(): string
+    {
+        return (string) $this->user->getCredentialVersion();
     }
 
     public function getDisplayName(): string

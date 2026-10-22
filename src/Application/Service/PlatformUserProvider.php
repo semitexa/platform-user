@@ -35,7 +35,10 @@ final class PlatformUserProvider implements UserProviderInterface
         }
 
         $user = $this->users->findById($id);
-        if ($user === null || !$user->canAuthenticate()) {
+        // Status, not the lockout: a lockout stops new sign-ins, and ending
+        // the sessions too let anybody sign a victim out everywhere by
+        // failing five times on their address.
+        if ($user === null || !$user->getStatus()->canAuthenticate()) {
             return null;
         }
 

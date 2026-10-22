@@ -42,7 +42,8 @@ final class PasswordResetServiceTest extends TestCase
         $this->orm->getAdapter()->execute(
             'CREATE TABLE platform_user_password_reset (
                 token_hash CHAR(64) PRIMARY KEY, user_id VARCHAR(36) NOT NULL, tenant_id VARCHAR(64) NOT NULL,
-                created_at DATETIME NOT NULL, expires_at DATETIME NOT NULL, used_at DATETIME NULL
+                created_at DATETIME NOT NULL, expires_at DATETIME NOT NULL, used_at DATETIME NULL,
+                credential_version INT NOT NULL DEFAULT 0
             )',
         );
         $this->tokens = new PasswordResetTokenStore();
@@ -129,6 +130,20 @@ final class PasswordResetServiceTest extends TestCase
         self::assertTrue($service->reset($second, self::NEW, $this->now->modify('+2 minutes'))->succeeded());
         self::assertSame(PasswordResetOutcome::InvalidToken, $service->reset($first, 'someone-elses-choice', $this->now->modify('+3 minutes'))->outcome);
         self::assertTrue($users->findById('u-1')?->verifyPassword(self::NEW));
+    }
+
+    /** Only the reset flow revoked links: an attacker's live link outlived a change meant to lock them out. */
+    #[Test]
+    public function a_password_set_any_other_way_voids_the_links_sent_before(): void
+    {
+        $users = self::users(self::user());
+        $service = $this->service($users);
+        $service->request('admin@example.test', null, $this->now);
+        $user = $users->findById('u-1');
+        self::assertNotNull($user);
+        $users->update($user->withPasswordHash((new PasswordHasher())->hash('changed-in-the-console')));
+
+        self::assertSame(PasswordResetOutcome::InvalidToken, $service->reset($this->sent[0]['token'], self::NEW, $this->now->modify('+1 minute'))->outcome);
     }
 
     #[Test]

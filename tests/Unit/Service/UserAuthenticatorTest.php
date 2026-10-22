@@ -46,6 +46,7 @@ final class UserAuthenticatorTest extends TestCase
         self::assertSame(AuthFailure::WrongPassword, $wrong->failure);
         self::assertFalse($missing->failure->isSafeToDisclose());
         self::assertFalse($wrong->failure->isSafeToDisclose());
+        self::assertFalse(\Semitexa\Platform\User\Domain\Enum\AuthFailure::Locked->isSafeToDisclose(), 'only an account that exists can be locked');
     }
 
     #[Test]
@@ -102,6 +103,29 @@ final class UserAuthenticatorTest extends TestCase
             status: $status,
             failedAttempts: $failedAttempts,
         );
+    }
+
+    /** Counted after the check, a burst of guesses was checked in full, the right password among them. */
+    #[Test]
+    public function once_the_attempts_are_used_up_the_right_password_is_not_even_checked(): void
+    {
+        $user = self::user();
+        $users = new class ($user) implements PlatformUserRepositoryInterface, \Semitexa\Platform\User\Domain\Contract\FailedLoginCounterInterface {
+            public function __construct(private PlatformUser $user) {}
+            public function findById(string $id): ?PlatformUser { return $this->user; }
+            public function findByEmail(string $email, ?string $tenantId = null): ?PlatformUser { return $this->user; }
+            public function findAll(?string $tenantId = null, bool $includeDisabled = false): array { return [$this->user]; }
+            public function save(PlatformUser $user): void {}
+            public function update(PlatformUser $user): void {}
+            public function delete(string $id): void {}
+            public function reserveLoginAttempt(PlatformUser $user, int $maxAttempts): bool { return false; }
+            public function lockIfExhausted(PlatformUser $user, int $maxAttempts, int $lockSeconds): ?PlatformUser { return $this->user; }
+        };
+
+        $attempt = self::authenticator($users)->attempt('admin@example.test', self::PASSWORD);
+
+        self::assertFalse($attempt->success);
+        self::assertSame(AuthFailure::Locked, $attempt->failure);
     }
 
     private static function repository(?PlatformUser $user): PlatformUserRepositoryInterface

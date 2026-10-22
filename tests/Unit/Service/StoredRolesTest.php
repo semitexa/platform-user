@@ -167,8 +167,11 @@ final class StoredRolesTest extends TestCase
         $this->console(new RoleAssignCommand(), ['--email' => 'ada@museum.test', 'role' => 'auditor']);
 
         self::assertSame(['exhibits.write', 'reports.read'], $this->provider(null)->getPermissionsForUser(self::ADA), 'no tenancy: her own site');
-        self::assertSame(['reports.read'], $this->provider(new DefaultTenantContext())->getPermissionsForUser(self::ADA), 'the root site: shared only');
-        self::assertSame(['reports.read'], $this->provider(self::tenant('clinic'))->getPermissionsForUser(self::ADA));
+        // A museum user reaching the root site or the clinic (a path tenant,
+        // a parent-domain cookie) holds nothing there: her shared role used
+        // to apply on the clinic's data, and on the root site to every site's.
+        self::assertSame([], $this->provider(new DefaultTenantContext())->getPermissionsForUser(self::ADA), 'the root site');
+        self::assertSame([], $this->provider(self::tenant('clinic'))->getPermissionsForUser(self::ADA), 'another site');
         self::assertSame(['exhibits.write', 'reports.read'], $this->provider(self::tenant('museum'))->getPermissionsForUser(self::ADA));
     }
 
