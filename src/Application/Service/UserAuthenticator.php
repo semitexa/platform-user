@@ -7,11 +7,16 @@ namespace Semitexa\Platform\User\Application\Service;
 use Semitexa\Core\Attribute\AsService;
 use Semitexa\Core\Attribute\Config;
 use Semitexa\Core\Attribute\InjectAsReadonly;
+use Semitexa\Core\Tenant\TenantContextAccess;
+use Semitexa\Core\Tenant\TenantContextInterface;
 use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
 use Semitexa\Platform\User\Domain\Contract\FailedLoginCounterInterface;
+use Semitexa\Platform\User\Domain\Contract\PlatformUserEmailLookupInterface;
 use Semitexa\Platform\User\Domain\Contract\PlatformUserRepositoryInterface;
 use Semitexa\Platform\User\Domain\Enum\AuthFailure;
 use Semitexa\Platform\User\Domain\Model\AuthAttempt;
+use Semitexa\Platform\User\Domain\Model\PlatformUser;
+use Semitexa\Platform\User\Domain\Service\SiteAccess;
 
 /**
  * Verifies one email/password pair and keeps the account's failure counters.
@@ -46,8 +51,59 @@ final class UserAuthenticator
         #[\SensitiveParameter] string $password,
         ?string $tenantId = null,
     ): AuthAttempt {
-        $user = $this->users->findByEmail(PlatformUserRepository::normalizeEmail($email), $tenantId);
+        return $this->check($this->users->findByEmail(PlatformUserRepository::normalizeEmail($email), $tenantId), $password);
+    }
 
+    /**
+     * attempt() for a request to one site: only the accounts that may act on
+     * that site are candidates (SiteAccess), before any password is checked.
+     * Checked first and refused after, a correct password for another site's
+     * account answered apart from a wrong one (its own message, a slower
+     * re-hash), was stamped as a sign-in, and reset that account's failures;
+     * and guesses from one site locked other sites' accounts out. An email
+     * registered with two sites signs in at each, where it was refused at
+     * both. A null $site (no tenancy) allows every account, as SiteAccess does.
+     */
+    public function attemptAt(
+        string $email,
+        #[\SensitiveParameter] string $password,
+        ?TenantContextInterface $site,
+    ): AuthAttempt {
+        $email = PlatformUserRepository::normalizeEmail($email);
+        $candidates = $this->users instanceof PlatformUserEmailLookupInterface
+            ? $this->users->findAllByEmail($email)
+            : self::fallbackCandidates($this->users, $email, $site);
+        $allowed = array_values(array_filter(
+            $candidates,
+            static fn (PlatformUser $user): bool => SiteAccess::allows($user, $site),
+        ));
+        // Two accounts this site accepts (an owner and a site user sharing
+        // the address) have no single right answer, as in findByEmail();
+        // unless only one of them can sign in at all: a disabled row then
+        // shut the active one out of its own site.
+        if (count($allowed) > 1) {
+            $allowed = array_values(array_filter($allowed, static fn (PlatformUser $user): bool => $user->getStatus()->canAuthenticate()));
+        }
+
+        return $this->check(count($allowed) === 1 ? $allowed[0] : null, $password);
+    }
+
+    /**
+     * A repository without findAllByEmail(): this site's account first, then
+     * the address on its own, which finds an owner when it names one account.
+     *
+     * @return list<PlatformUser>
+     */
+    private static function fallbackCandidates(PlatformUserRepositoryInterface $users, string $email, ?TenantContextInterface $site): array
+    {
+        $tenantId = TenantContextAccess::tenantId($site);
+        $user = ($tenantId !== null ? $users->findByEmail($email, $tenantId) : null) ?? $users->findByEmail($email);
+
+        return $user === null ? [] : [$user];
+    }
+
+    private function check(?PlatformUser $user, #[\SensitiveParameter] string $password): AuthAttempt
+    {
         if ($user === null) {
             // Hash something anyway. Without this, "no such account" returns in
             // microseconds while a real account spends the full Argon2 cost, and

@@ -13,12 +13,13 @@ use Semitexa\Orm\Query\Operator;
 use Semitexa\Orm\Repository\DomainRepository;
 use Semitexa\Platform\User\Application\Db\MySQL\Model\PlatformUserResourceModel;
 use Semitexa\Platform\User\Domain\Contract\FailedLoginCounterInterface;
+use Semitexa\Platform\User\Domain\Contract\PlatformUserEmailLookupInterface;
 use Semitexa\Platform\User\Domain\Contract\PlatformUserRepositoryInterface;
 use Semitexa\Platform\User\Domain\Enum\UserStatus;
 use Semitexa\Platform\User\Domain\Model\PlatformUser;
 
 #[SatisfiesRepositoryContract(of: PlatformUserRepositoryInterface::class)]
-final class PlatformUserRepository implements PlatformUserRepositoryInterface, FailedLoginCounterInterface
+final class PlatformUserRepository implements PlatformUserRepositoryInterface, FailedLoginCounterInterface, PlatformUserEmailLookupInterface
 {
     #[InjectAsReadonly]
     protected OrmManager $orm;
@@ -33,9 +34,25 @@ final class PlatformUserRepository implements PlatformUserRepositoryInterface, F
 
     public function findByEmail(string $email, ?string $tenantId = null): ?PlatformUser
     {
+        $matches = $this->matching($email, $tenantId);
+
+        // Without a tenant to disambiguate, one email registered against two
+        // sites has no single right answer. Refusing beats signing them into
+        // whichever row happens to sort first.
+        return count($matches) === 1 ? $matches[0] : null;
+    }
+
+    public function findAllByEmail(string $email): array
+    {
+        return $this->matching($email, null);
+    }
+
+    /** @return list<PlatformUser> */
+    private function matching(string $email, ?string $tenantId): array
+    {
         $email = self::normalizeEmail($email);
         if ($email === '') {
-            return null;
+            return [];
         }
 
         $query = $this->repository()->query()
@@ -45,15 +62,10 @@ final class PlatformUserRepository implements PlatformUserRepositoryInterface, F
             $query->where(PlatformUserResourceModel::column('tenantId'), Operator::Equals, $tenantId);
         }
 
-        /** @var list<PlatformUser> $matches */
-        $matches = $query
+        /** @var list<PlatformUser> */
+        return $query
             ->orderBy(PlatformUserResourceModel::column('createdAt'), Direction::Asc)
             ->fetchAllAs(PlatformUser::class, $this->orm()->getMapperRegistry());
-
-        // Without a tenant to disambiguate, one email registered against two
-        // sites has no single right answer. Refusing beats signing them into
-        // whichever row happens to sort first.
-        return count($matches) === 1 ? $matches[0] : null;
     }
 
     public function findAll(?string $tenantId = null, bool $includeDisabled = false): array

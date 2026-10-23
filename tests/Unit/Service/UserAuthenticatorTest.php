@@ -9,6 +9,10 @@ use PHPUnit\Framework\TestCase;
 use Semitexa\Platform\User\Application\Service\PasswordHasher;
 use Semitexa\Platform\User\Application\Service\UserAuthenticator;
 use Semitexa\Platform\User\Domain\Contract\PlatformUserRepositoryInterface;
+use Semitexa\Platform\User\Domain\Contract\PlatformUserEmailLookupInterface;
+use Semitexa\Core\Tenant\Layer\TenantLayerInterface;
+use Semitexa\Core\Tenant\Layer\TenantLayerValueInterface;
+use Semitexa\Core\Tenant\TenantContextInterface;
 use Semitexa\Platform\User\Domain\Enum\AuthFailure;
 use Semitexa\Platform\User\Domain\Enum\UserRole;
 use Semitexa\Platform\User\Domain\Enum\UserStatus;
@@ -88,6 +92,70 @@ final class UserAuthenticatorTest extends TestCase
         $attempt = self::authenticator($repo)->attempt('admin@example.test', self::PASSWORD);
 
         self::assertTrue($attempt->success);
+    }
+
+    /**
+     * The site first: checked after the password, a right password for
+     * another site's account was stamped as a sign-in, reset its failures
+     * and answered apart from a wrong one.
+     */
+    #[Test]
+    public function another_site_s_account_is_not_even_checked_at_this_site(): void
+    {
+        $repo = self::lookup([self::user()]);
+
+        $attempt = self::authenticator($repo)->attemptAt('admin@example.test', self::PASSWORD, self::site('clinic'));
+
+        self::assertFalse($attempt->success);
+        self::assertSame(AuthFailure::NoSuchUser, $attempt->failure);
+        self::assertNull($repo->updated, 'no sign-in stamp, no counter reset, no re-hash');
+    }
+
+    /** One address registered with two sites was refused at both: findByEmail() had no single answer. */
+    #[Test]
+    public function an_email_registered_with_two_sites_signs_in_at_each(): void
+    {
+        $clinic = new PlatformUser(
+            id: 'u-2',
+            email: 'admin@example.test',
+            passwordHash: password_hash('clinic-password', PASSWORD_BCRYPT, ['cost' => 4]),
+            tenantId: 'clinic',
+            role: UserRole::Admin,
+        );
+        $repo = self::lookup([self::user(), $clinic]);
+
+        self::assertSame('u-2', self::authenticator($repo)->attemptAt('admin@example.test', 'clinic-password', self::site('clinic'))->user?->getId());
+        self::assertSame('u-1', self::authenticator($repo)->attemptAt('admin@example.test', self::PASSWORD, self::site('regmus'))->user?->getId());
+        self::assertFalse(self::authenticator($repo)->attemptAt('admin@example.test', self::PASSWORD, null)->success, 'without a site, two accounts have no single answer');
+    }
+
+    /** @param list<PlatformUser> $users */
+    private static function lookup(array $users): PlatformUserRepositoryInterface&PlatformUserEmailLookupInterface
+    {
+        return new class ($users) implements PlatformUserRepositoryInterface, PlatformUserEmailLookupInterface {
+            public ?PlatformUser $updated = null;
+
+            /** @param list<PlatformUser> $users */
+            public function __construct(private array $users) {}
+            public function findById(string $id): ?PlatformUser { return null; }
+            public function findByEmail(string $email, ?string $tenantId = null): ?PlatformUser { return count($this->users) === 1 ? $this->users[0] : null; }
+            public function findAllByEmail(string $email): array { return $this->users; }
+            public function findAll(?string $tenantId = null, bool $includeDisabled = false): array { return $this->users; }
+            public function save(PlatformUser $user): void {}
+            public function update(PlatformUser $user): void { $this->updated = $user; }
+            public function delete(string $id): void {}
+        };
+    }
+
+    private static function site(string $tenantId): TenantContextInterface
+    {
+        return new class ($tenantId) implements TenantContextInterface {
+            public function __construct(private string $id) {}
+            public function getTenantId(): string { return $this->id; }
+            public function isDefault(): bool { return false; }
+            public function getLayer(TenantLayerInterface $layer): ?TenantLayerValueInterface { return null; }
+            public function hasLayer(TenantLayerInterface $layer): bool { return false; }
+        };
     }
 
     private static function user(
