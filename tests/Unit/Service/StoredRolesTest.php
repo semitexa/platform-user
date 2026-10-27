@@ -75,11 +75,13 @@ final class StoredRolesTest extends TestCase
     #[Test]
     public function one_site_s_role_cannot_be_given_to_another_site_s_user(): void
     {
-        $this->console(new RoleCreateCommand(), ['name' => 'curator', '--permission' => ['exhibits.write'], '--tenant' => 'museum']);
+        self::assertSame(Command::SUCCESS, $this->console(new RoleCreateCommand(), ['name' => 'curator', '--permission' => ['exhibits.write'], '--tenant' => 'museum'])->getStatusCode());
+        self::assertSame('museum', $this->roles->find('museum', 'curator')['tenant_id'] ?? null, 'the role exists, for the museum');
 
         $assign = $this->console(new RoleAssignCommand(), ['--email' => 'bob@clinic.test', 'role' => 'curator']);
 
         self::assertSame(Command::FAILURE, $assign->getStatusCode());
+        self::assertSame("No role curator for this user's tenant and no shared one. role:list shows them.", trim($assign->getDisplay()));
         self::assertSame([], $this->roles->permissionsOf(self::BOB, 'clinic'));
     }
 
@@ -123,7 +125,12 @@ final class StoredRolesTest extends TestCase
 
         self::assertSame(['exhibits.write', 'reports.read'], $this->roles->permissionsOf(self::ADA, 'museum'));
         self::assertSame(['reports.read'], $this->roles->permissionsOf(self::ADA, 'clinic'), 'only the shared role on the clinic\'s site');
-        self::assertSame([], $this->provider()->getPermissionsForUser('google:ada@museum.test'), 'another sign-in method\'s id has no stored roles');
+        // Held under another sign-in method's id, the role is still not
+        // granted through it: that id is not looked up at all.
+        $this->users->save(new PlatformUser(id: 'google:ada@museum.test', email: 'g@museum.test', passwordHash: 'x', tenantId: 'museum', role: UserRole::Admin));
+        $this->roles->assign('google:ada@museum.test', $this->roles->find('museum', 'curator')['id'] ?? '');
+        self::assertSame(['exhibits.write'], $this->roles->permissionsOf('google:ada@museum.test', 'museum'), 'the assignment exists');
+        self::assertSame([], $this->provider()->getPermissionsForUser('google:ada@museum.test'), 'another sign-in method\'s id is not looked up');
     }
 
     /** With a site's role and a shared one of the same name, --shared names the shared one. */
@@ -173,6 +180,40 @@ final class StoredRolesTest extends TestCase
         self::assertSame([], $this->provider(new DefaultTenantContext())->getPermissionsForUser(self::ADA), 'the root site');
         self::assertSame([], $this->provider(self::tenant('clinic'))->getPermissionsForUser(self::ADA), 'another site');
         self::assertSame(['exhibits.write', 'reports.read'], $this->provider(self::tenant('museum'))->getPermissionsForUser(self::ADA));
+    }
+
+    /**
+     * Logged once per worker for good, one transient failure hid every later
+     * one: users got 403s and the log said nothing. Now once a minute.
+     */
+    #[Test]
+    public function a_failure_to_read_the_roles_is_logged_again_after_a_minute(): void
+    {
+        $reportedAt = new \ReflectionProperty(StoredRolePermissionProvider::class, 'reportedAt');
+        $reportedAt->setValue(null, 0);
+        $this->orm->getAdapter()->execute('DROP TABLE platform_user_role');
+        $log = sys_get_temp_dir() . '/stored-roles-' . bin2hex(random_bytes(6)) . '.log';
+        $previous = ini_get('error_log');
+        ini_set('error_log', $log);
+        try {
+            $provider = $this->provider();
+            $first = $provider->getPermissionsForUser(self::ADA);
+            $provider->getPermissionsForUser(self::ADA);
+            $withinTheMinute = count(file($log) ?: []);
+            $reportedAt->setValue(null, time() - 60);
+            $provider->getPermissionsForUser(self::ADA);
+            $afterIt = count(file($log) ?: []);
+            $line = (string) file_get_contents($log);
+        } finally {
+            ini_set('error_log', $previous === false ? '' : $previous);
+            @unlink($log);
+            $reportedAt->setValue(null, 0);
+        }
+
+        self::assertSame([], $first, 'no stored grant, no 500');
+        self::assertSame(1, $withinTheMinute);
+        self::assertSame(2, $afterIt);
+        self::assertStringContainsString('[Semitexa] Stored roles could not be read; granting none of them (run bin/semitexa orm:sync?) error=', $line);
     }
 
     #[Test]

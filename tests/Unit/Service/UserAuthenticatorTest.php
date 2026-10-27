@@ -196,6 +196,58 @@ final class UserAuthenticatorTest extends TestCase
         self::assertSame(AuthFailure::Locked, $attempt->failure);
     }
 
+    /**
+     * A counter that throws lets the attempt through uncounted: the lockout
+     * is off while it fails, and the log was silent about it.
+     */
+    #[Test]
+    public function a_failing_attempt_counter_is_logged_not_silent(): void
+    {
+        $user = self::user();
+        $users = new class ($user) implements PlatformUserRepositoryInterface, \Semitexa\Platform\User\Domain\Contract\FailedLoginCounterInterface {
+            public bool $reserve = true;
+            public function __construct(private PlatformUser $user) {}
+            public function findById(string $id): ?PlatformUser { return $this->user; }
+            public function findByEmail(string $email, ?string $tenantId = null): ?PlatformUser { return $this->user; }
+            public function findAll(?string $tenantId = null, bool $includeDisabled = false): array { return [$this->user]; }
+            public function save(PlatformUser $user): void {}
+            public function update(PlatformUser $user): void {}
+            public function delete(string $id): void {}
+            public function reserveLoginAttempt(PlatformUser $user, int $maxAttempts): bool
+            {
+                if ($this->reserve) {
+                    throw new \RuntimeException('lock wait timeout');
+                }
+
+                return false;
+            }
+            public function lockIfExhausted(PlatformUser $user, int $maxAttempts, int $lockSeconds): ?PlatformUser { throw new \RuntimeException('deadlock'); }
+        };
+        $log = sys_get_temp_dir() . '/user-authenticator-' . bin2hex(random_bytes(6)) . '.log';
+        $previous = ini_get('error_log');
+        ini_set('error_log', $log);
+        try {
+            $wrong = self::authenticator($users)->attempt('admin@example.test', 'not-the-password');
+            $users->reserve = false;
+            $exhausted = self::authenticator($users)->attempt('admin@example.test', self::PASSWORD);
+            $lines = array_map(
+                static fn (string $line): string => (string) preg_replace('/^\[[^\]]*\] /', '', $line),
+                file($log, FILE_IGNORE_NEW_LINES) ?: [],
+            );
+        } finally {
+            ini_set('error_log', $previous === false ? '' : $previous);
+            @unlink($log);
+        }
+
+        self::assertSame(AuthFailure::WrongPassword, $wrong->failure, 'sign-in is not blocked by the counter');
+        self::assertSame(AuthFailure::Locked, $exhausted->failure);
+        self::assertSame([
+            '[Semitexa] Login attempt could not be counted; the lockout does not limit it user=u-1 error=lock wait timeout',
+            '[Semitexa] Lockout after a failed login could not be written user=u-1 error=deadlock',
+            '[Semitexa] Lock of an account out of attempts could not be written; it stays refused until one is user=u-1 error=deadlock',
+        ], $lines);
+    }
+
     private static function repository(?PlatformUser $user): PlatformUserRepositoryInterface
     {
         return new class ($user) implements PlatformUserRepositoryInterface {

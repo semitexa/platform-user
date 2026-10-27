@@ -7,6 +7,7 @@ namespace Semitexa\Platform\User\Application\Service;
 use Semitexa\Core\Attribute\AsService;
 use Semitexa\Core\Attribute\Config;
 use Semitexa\Core\Attribute\InjectAsReadonly;
+use Semitexa\Core\Log\FallbackErrorLogger;
 use Semitexa\Core\Tenant\TenantContextAccess;
 use Semitexa\Core\Tenant\TenantContextInterface;
 use Semitexa\Platform\User\Application\Db\MySQL\Repository\PlatformUserRepository;
@@ -131,8 +132,15 @@ final class UserAuthenticator
         if ($this->users instanceof FailedLoginCounterInterface) {
             try {
                 $reserved = $this->users->reserveLoginAttempt($user, $this->maxAttempts ?? 5);
-            } catch (\Throwable) {
-                $reserved = true; // see persist(): bookkeeping never decides alone
+            } catch (\Throwable $e) {
+                // See persist(): bookkeeping never decides alone. The cost is
+                // that this attempt is not counted, so the lockout does not
+                // limit it while the counter fails; the log is the only trace.
+                FallbackErrorLogger::log('Login attempt could not be counted; the lockout does not limit it', [
+                    'user' => $user->getId(),
+                    'error' => $e->getMessage(),
+                ]);
+                $reserved = true;
             }
             if (!$reserved) {
                 // Attempts used up but no lock written (its write failed, or
@@ -140,7 +148,14 @@ final class UserAuthenticator
                 // refused with no end: written now, it ends like any lockout.
                 try {
                     $this->users->lockIfExhausted($user, $this->maxAttempts ?? 5, $this->lockSeconds ?? 900);
-                } catch (\Throwable) {
+                } catch (\Throwable $e) {
+                    // The attempt is refused all the same; what fails is the
+                    // lock's end, so the account stays refused with no end
+                    // until a later attempt writes it.
+                    FallbackErrorLogger::log('Lock of an account out of attempts could not be written; it stays refused until one is', [
+                        'user' => $user->getId(),
+                        'error' => $e->getMessage(),
+                    ]);
                 }
                 $this->burnTime($password);
 
@@ -192,8 +207,16 @@ final class UserAuthenticator
             try {
                 // Already counted when the attempt was taken.
                 return $this->users->lockIfExhausted($user, $max, $seconds) ?? $user;
-            } catch (\Throwable) {
-                return $user; // see persist()
+            } catch (\Throwable $e) {
+                // See persist(). The attempt was counted when it was taken;
+                // what fails is the lock, so this answer says wrong password
+                // instead of locked, and the next attempt writes the lock.
+                FallbackErrorLogger::log('Lockout after a failed login could not be written', [
+                    'user' => $user->getId(),
+                    'error' => $e->getMessage(),
+                ]);
+
+                return $user;
             }
         }
         $failed = $user->withFailedLogin($max, $seconds);

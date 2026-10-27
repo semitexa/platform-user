@@ -68,7 +68,13 @@ final class RoleStore
         return $id;
     }
 
-    /** @return array{id: string, tenant_id: string, name: string, permissions: list<string>}|null */
+    /**
+     * Impure: create() reads it again after a failed insert, when another
+     * create may have added the row in between.
+     *
+     * @phpstan-impure
+     * @return array{id: string, tenant_id: string, name: string, permissions: list<string>}|null
+     */
     public function find(string $tenantId, string $name): ?array
     {
         $row = $this->orm()->getQueryAdapter()->execute(sprintf(
@@ -93,7 +99,7 @@ final class RoleStore
             $params['tenant_id'] = $tenantId;
         }
 
-        return array_map(self::role(...), $this->orm()->getQueryAdapter()->execute($sql . ' ORDER BY tenant_id, name', $params)->fetchAll());
+        return array_values(array_map(self::role(...), $this->orm()->getQueryAdapter()->execute($sql . ' ORDER BY tenant_id, name', $params)->fetchAll()));
     }
 
     /**
@@ -155,6 +161,11 @@ final class RoleStore
         return true;
     }
 
+    /**
+     * Impure: assign() reads it again after a failed insert.
+     *
+     * @phpstan-impure
+     */
     private function holds(string $userId, string $roleId): bool
     {
         return $this->orm()->getQueryAdapter()->execute(sprintf(
@@ -190,7 +201,7 @@ final class RoleStore
             $params['tenant_id'] = $tenantId;
         }
 
-        return array_map(self::role(...), $this->orm()->getQueryAdapter()->execute($sql . ' ORDER BY r.name', $params)->fetchAll());
+        return array_values(array_map(self::role(...), $this->orm()->getQueryAdapter()->execute($sql . ' ORDER BY r.name', $params)->fetchAll()));
     }
 
     /**
@@ -265,6 +276,6 @@ final class RoleStore
     /** @param list<string> $permissions */
     private static function encode(array $permissions): string
     {
-        return json_encode(array_values($permissions), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+        return json_encode($permissions, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
     }
 }

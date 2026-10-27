@@ -37,8 +37,11 @@ final class StoredRolePermissionProvider implements PermissionProviderInterface
     #[InjectAsReadonly(optional: true)]
     protected TenantContextStoreInterface $tenants;
 
-    #[WorkerState('Whether this worker already logged that the stored roles could not be read.')]
-    private static bool $reported = false;
+    /** At most one log line a minute per worker, whatever keeps failing. */
+    private const REPORT_EVERY_SECONDS = 60;
+
+    #[WorkerState('When this worker last logged that the stored roles could not be read (unix time).')]
+    private static int $reportedAt = 0;
 
     /** @return list<string> */
     public function getPermissionsForUser(string $userId): array
@@ -69,11 +72,16 @@ final class StoredRolePermissionProvider implements PermissionProviderInterface
 
             return $this->roles->permissionsOf($userId, $tenantId);
         } catch (\Exception $e) {
-            // The tables missing after an upgrade without orm:sync must not
-            // turn every permission check into a 500: no stored grant, said
-            // once per worker. An Error (a bug) is not swallowed.
-            if (!self::$reported) {
-                self::$reported = true;
+            // Any failure to read the user or the roles (the tables missing
+            // after an upgrade without orm:sync, a lost connection, a lock
+            // timeout) must not turn every permission check into a 500: no
+            // stored grant. Said at most once a minute per worker, so a
+            // failure that keeps happening is not a log line per request;
+            // logged once for good, one transient timeout hid every later
+            // failure of that worker, and its users got 403s with no trace.
+            // An Error (a bug) is not swallowed.
+            if (time() - self::$reportedAt >= self::REPORT_EVERY_SECONDS) {
+                self::$reportedAt = time();
                 FallbackErrorLogger::log('Stored roles could not be read; granting none of them (run bin/semitexa orm:sync?)', [
                     'error' => $e->getMessage(),
                 ]);
