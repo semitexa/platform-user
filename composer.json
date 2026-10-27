@@ -38,7 +38,8 @@
         "semitexa": {
             "floors": {
                 "semitexa/auth": "next",
-                "semitexa/mail": "next"
+                "semitexa/mail": "next",
+                "semitexa/core": "next"
             }
         }
     },

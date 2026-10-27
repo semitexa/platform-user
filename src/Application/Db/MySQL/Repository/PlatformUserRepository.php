@@ -6,6 +6,8 @@ namespace Semitexa\Platform\User\Application\Db\MySQL\Repository;
 
 use Semitexa\Core\Attribute\InjectAsReadonly;
 use Semitexa\Core\Attribute\SatisfiesRepositoryContract;
+use Semitexa\Core\Auth\Event\UserDeleted;
+use Semitexa\Core\Event\EventDispatcherInterface;
 use Semitexa\Orm\Application\Service\Uuid7;
 use Semitexa\Orm\OrmManager;
 use Semitexa\Orm\Query\Direction;
@@ -23,6 +25,9 @@ final class PlatformUserRepository implements PlatformUserRepositoryInterface, F
 {
     #[InjectAsReadonly]
     protected OrmManager $orm;
+
+    #[InjectAsReadonly(optional: true)]
+    protected EventDispatcherInterface $events;
 
     private ?DomainRepository $repository = null;
 
@@ -149,6 +154,11 @@ final class PlatformUserRepository implements PlatformUserRepositoryInterface, F
         }
 
         $this->repository()->delete($user);
+        // In the caller's transaction: a Sync listener removes what it keeps
+        // for the user with the row (settings, feature flag overrides).
+        if (isset($this->events)) {
+            $this->events->dispatch(new UserDeleted($user->getId(), $user->getTenantId()));
+        }
     }
 
     /**
