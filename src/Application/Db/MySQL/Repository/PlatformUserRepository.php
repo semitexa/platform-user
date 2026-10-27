@@ -153,12 +153,16 @@ final class PlatformUserRepository implements PlatformUserRepositoryInterface, F
             return;
         }
 
-        $this->repository()->delete($user);
-        // In the caller's transaction: a Sync listener removes what it keeps
-        // for the user with the row (settings, feature flag overrides).
-        if (isset($this->events)) {
-            $this->events->dispatch(new UserDeleted($user->getId(), $user->getTenantId()));
-        }
+        // One transaction (the caller's, when there is one): a Sync listener
+        // removes what it keeps for the user with the row (settings, feature
+        // flag overrides), and a listener that throws keeps the row too.
+        // Outside one, the row was gone and the settings stayed.
+        $this->orm()->getTransactionManager()->run(function () use ($user): void {
+            $this->repository()->delete($user);
+            if (isset($this->events)) {
+                $this->events->dispatch(new UserDeleted($user->getId(), $user->getTenantId()));
+            }
+        });
     }
 
     /**
