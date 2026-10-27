@@ -49,6 +49,8 @@ final class MailPasswordResetMailer implements PasswordResetMailerInterface
         $minutes = max(1, intdiv($expiresAt->getTimestamp() - time() + 59, 60));
 
         $envelope = new MailEnvelope();
+        // The live link: erased from the stored row once the mail is sent.
+        $envelope->sensitive = true;
         $envelope->mailKey = 'platform-user.password-reset';
         $envelope->tenantId = $user->getTenantId() !== '' ? $user->getTenantId() : null;
         $envelope->to = [new MailRecipient($user->getEmail(), $user->getDisplayName() !== '' ? $user->getDisplayName() : null)];
