@@ -39,7 +39,8 @@
             "floors": {
                 "semitexa/auth": "next",
                 "semitexa/mail": "next",
-                "semitexa/core": "next"
+                "semitexa/core": "next",
+                "semitexa/orm": "next"
             }
         }
     },
