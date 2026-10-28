@@ -68,6 +68,13 @@ final class UserAddCommand extends BaseCommand
 
             return Command::INVALID;
         }
+        // An owner administers every site and belongs to none: one bound to a
+        // site was read as global by some checks and as that site's by others.
+        if ($tenantId !== '' && $role === UserRole::Owner) {
+            $output->writeln('<error>An owner belongs to no site: leave --tenant out.</error>');
+
+            return Command::INVALID;
+        }
 
         if ($this->users->findByEmail($email, $tenantId) !== null) {
             $output->writeln(sprintf('<error>%s already exists%s.</error>', $email, $tenantId !== '' ? ' for tenant ' . $tenantId : ''));

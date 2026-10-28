@@ -20,9 +20,13 @@ enum AuthFailure: string
     case Disabled = 'disabled';
     case Locked = 'locked';
 
-    /** Safe to show: the visitor cannot learn anything they could not guess. */
+    /**
+     * Safe to show: the visitor cannot learn anything they could not guess.
+     * None is: "locked" can only be said of an account that exists, so five
+     * wrong tries told a stranger whether an address had one.
+     */
     public function isSafeToDisclose(): bool
     {
-        return $this === self::Locked;
+        return false;
     }
 }

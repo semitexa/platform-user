@@ -13,7 +13,9 @@
         "php": "^8.4",
         "semitexa/core": "*",
         "semitexa/auth": "*",
-        "semitexa/orm": "*"
+        "semitexa/orm": "*",
+        "semitexa/rbac": "*",
+        "semitexa/mail": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.0"
@@ -32,6 +34,14 @@
         "semitexa-module": {
             "name": "platform-user",
             "description": "Identity store: users, password credentials, roles, tenant binding"
+        },
+        "semitexa": {
+            "floors": {
+                "semitexa/auth": "next",
+                "semitexa/mail": "next",
+                "semitexa/core": "next",
+                "semitexa/orm": "next"
+            }
         }
     },
     "keywords": [

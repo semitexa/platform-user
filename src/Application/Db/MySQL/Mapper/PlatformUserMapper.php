@@ -35,6 +35,8 @@ final class PlatformUserMapper implements ResourceModelMapperInterface
             failedAttempts: $resourceModel->failedAttempts,
             lockedUntil: $resourceModel->lockedUntil,
             passwordIssuedByOperator: $resourceModel->passwordIssuedByOperator,
+            credentialVersion: $resourceModel->credentialVersion,
+            rowVersion: $resourceModel->rowVersion,
         );
     }
 
@@ -56,6 +58,8 @@ final class PlatformUserMapper implements ResourceModelMapperInterface
             failedAttempts: $domainModel->getFailedAttempts(),
             lockedUntil: $domainModel->getLockedUntil(),
             passwordIssuedByOperator: $domainModel->isPasswordIssuedByOperator(),
+            credentialVersion: $domainModel->getCredentialVersion(),
+            rowVersion: $domainModel->getRowVersion(),
         );
     }
 }

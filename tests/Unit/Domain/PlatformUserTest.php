@@ -65,6 +65,17 @@ final class PlatformUserTest extends TestCase
         self::assertTrue($expired->canAuthenticate());
     }
 
+    /** One miss after a lockout ran out locked again for the full window: one request per window kept anybody out. */
+    #[Test]
+    public function a_miss_after_a_lockout_ran_out_starts_the_count_again(): void
+    {
+        $after = self::user(failedAttempts: 5, lockedUntil: new \DateTimeImmutable('-1 second'))->withFailedLogin(maxAttempts: 5, lockSeconds: 900);
+
+        self::assertSame(1, $after->getFailedAttempts());
+        self::assertFalse($after->isLocked());
+        self::assertNull($after->getLockedUntil());
+    }
+
     #[Test]
     public function unrelated_edits_do_not_quietly_lift_an_active_lock(): void
     {
@@ -102,6 +113,25 @@ final class PlatformUserTest extends TestCase
 
         self::assertTrue($disabled->verifyPassword('correct-horse-battery'));
         self::assertFalse($disabled->canAuthenticate());
+    }
+
+    #[Test]
+    public function every_new_password_raises_the_credential_version_and_a_rehash_does_not(): void
+    {
+        $user = self::user();
+        $operatorIssued = $user->withPasswordIssuedByOperator(password_hash('issued-by-operator', PASSWORD_BCRYPT, ['cost' => 4]));
+        $chosen = $operatorIssued->withPasswordHash(password_hash('chosen-by-owner', PASSWORD_BCRYPT, ['cost' => 4]));
+
+        self::assertSame(0, $user->getCredentialVersion());
+        self::assertSame(1, $operatorIssued->getCredentialVersion());
+        self::assertSame(2, $chosen->getCredentialVersion());
+
+        // Same password, new cost: no session ends and the owner still owes
+        // their own password (a rehash through withPasswordHash cleared it).
+        $rehashed = $operatorIssued->withRehashedPassword(password_hash('issued-by-operator', PASSWORD_BCRYPT, ['cost' => 5]));
+        self::assertSame(1, $rehashed->getCredentialVersion());
+        self::assertTrue($rehashed->isPasswordIssuedByOperator());
+        self::assertTrue($rehashed->verifyPassword('issued-by-operator'));
     }
 
     #[Test]

@@ -9,6 +9,10 @@ use PHPUnit\Framework\TestCase;
 use Semitexa\Platform\User\Application\Service\PasswordHasher;
 use Semitexa\Platform\User\Application\Service\UserAuthenticator;
 use Semitexa\Platform\User\Domain\Contract\PlatformUserRepositoryInterface;
+use Semitexa\Platform\User\Domain\Contract\PlatformUserEmailLookupInterface;
+use Semitexa\Core\Tenant\Layer\TenantLayerInterface;
+use Semitexa\Core\Tenant\Layer\TenantLayerValueInterface;
+use Semitexa\Core\Tenant\TenantContextInterface;
 use Semitexa\Platform\User\Domain\Enum\AuthFailure;
 use Semitexa\Platform\User\Domain\Enum\UserRole;
 use Semitexa\Platform\User\Domain\Enum\UserStatus;
@@ -46,6 +50,7 @@ final class UserAuthenticatorTest extends TestCase
         self::assertSame(AuthFailure::WrongPassword, $wrong->failure);
         self::assertFalse($missing->failure->isSafeToDisclose());
         self::assertFalse($wrong->failure->isSafeToDisclose());
+        self::assertFalse(\Semitexa\Platform\User\Domain\Enum\AuthFailure::Locked->isSafeToDisclose(), 'only an account that exists can be locked');
     }
 
     #[Test]
@@ -89,6 +94,70 @@ final class UserAuthenticatorTest extends TestCase
         self::assertTrue($attempt->success);
     }
 
+    /**
+     * The site first: checked after the password, a right password for
+     * another site's account was stamped as a sign-in, reset its failures
+     * and answered apart from a wrong one.
+     */
+    #[Test]
+    public function another_site_s_account_is_not_even_checked_at_this_site(): void
+    {
+        $repo = self::lookup([self::user()]);
+
+        $attempt = self::authenticator($repo)->attemptAt('admin@example.test', self::PASSWORD, self::site('clinic'));
+
+        self::assertFalse($attempt->success);
+        self::assertSame(AuthFailure::NoSuchUser, $attempt->failure);
+        self::assertNull($repo->updated, 'no sign-in stamp, no counter reset, no re-hash');
+    }
+
+    /** One address registered with two sites was refused at both: findByEmail() had no single answer. */
+    #[Test]
+    public function an_email_registered_with_two_sites_signs_in_at_each(): void
+    {
+        $clinic = new PlatformUser(
+            id: 'u-2',
+            email: 'admin@example.test',
+            passwordHash: password_hash('clinic-password', PASSWORD_BCRYPT, ['cost' => 4]),
+            tenantId: 'clinic',
+            role: UserRole::Admin,
+        );
+        $repo = self::lookup([self::user(), $clinic]);
+
+        self::assertSame('u-2', self::authenticator($repo)->attemptAt('admin@example.test', 'clinic-password', self::site('clinic'))->user?->getId());
+        self::assertSame('u-1', self::authenticator($repo)->attemptAt('admin@example.test', self::PASSWORD, self::site('regmus'))->user?->getId());
+        self::assertFalse(self::authenticator($repo)->attemptAt('admin@example.test', self::PASSWORD, null)->success, 'without a site, two accounts have no single answer');
+    }
+
+    /** @param list<PlatformUser> $users */
+    private static function lookup(array $users): PlatformUserRepositoryInterface&PlatformUserEmailLookupInterface
+    {
+        return new class ($users) implements PlatformUserRepositoryInterface, PlatformUserEmailLookupInterface {
+            public ?PlatformUser $updated = null;
+
+            /** @param list<PlatformUser> $users */
+            public function __construct(private array $users) {}
+            public function findById(string $id): ?PlatformUser { return null; }
+            public function findByEmail(string $email, ?string $tenantId = null): ?PlatformUser { return count($this->users) === 1 ? $this->users[0] : null; }
+            public function findAllByEmail(string $email): array { return $this->users; }
+            public function findAll(?string $tenantId = null, bool $includeDisabled = false): array { return $this->users; }
+            public function save(PlatformUser $user): void {}
+            public function update(PlatformUser $user): void { $this->updated = $user; }
+            public function delete(string $id): void {}
+        };
+    }
+
+    private static function site(string $tenantId): TenantContextInterface
+    {
+        return new class ($tenantId) implements TenantContextInterface {
+            public function __construct(private string $id) {}
+            public function getTenantId(): string { return $this->id; }
+            public function isDefault(): bool { return false; }
+            public function getLayer(TenantLayerInterface $layer): ?TenantLayerValueInterface { return null; }
+            public function hasLayer(TenantLayerInterface $layer): bool { return false; }
+        };
+    }
+
     private static function user(
         UserStatus $status = UserStatus::Active,
         int $failedAttempts = 0,
@@ -102,6 +171,81 @@ final class UserAuthenticatorTest extends TestCase
             status: $status,
             failedAttempts: $failedAttempts,
         );
+    }
+
+    /** Counted after the check, a burst of guesses was checked in full, the right password among them. */
+    #[Test]
+    public function once_the_attempts_are_used_up_the_right_password_is_not_even_checked(): void
+    {
+        $user = self::user();
+        $users = new class ($user) implements PlatformUserRepositoryInterface, \Semitexa\Platform\User\Domain\Contract\FailedLoginCounterInterface {
+            public function __construct(private PlatformUser $user) {}
+            public function findById(string $id): ?PlatformUser { return $this->user; }
+            public function findByEmail(string $email, ?string $tenantId = null): ?PlatformUser { return $this->user; }
+            public function findAll(?string $tenantId = null, bool $includeDisabled = false): array { return [$this->user]; }
+            public function save(PlatformUser $user): void {}
+            public function update(PlatformUser $user): void {}
+            public function delete(string $id): void {}
+            public function reserveLoginAttempt(PlatformUser $user, int $maxAttempts): bool { return false; }
+            public function lockIfExhausted(PlatformUser $user, int $maxAttempts, int $lockSeconds): ?PlatformUser { return $this->user; }
+        };
+
+        $attempt = self::authenticator($users)->attempt('admin@example.test', self::PASSWORD);
+
+        self::assertFalse($attempt->success);
+        self::assertSame(AuthFailure::Locked, $attempt->failure);
+    }
+
+    /**
+     * A counter that throws lets the attempt through uncounted: the lockout
+     * is off while it fails, and the log was silent about it.
+     */
+    #[Test]
+    public function a_failing_attempt_counter_is_logged_not_silent(): void
+    {
+        $user = self::user();
+        $users = new class ($user) implements PlatformUserRepositoryInterface, \Semitexa\Platform\User\Domain\Contract\FailedLoginCounterInterface {
+            public bool $reserve = true;
+            public function __construct(private PlatformUser $user) {}
+            public function findById(string $id): ?PlatformUser { return $this->user; }
+            public function findByEmail(string $email, ?string $tenantId = null): ?PlatformUser { return $this->user; }
+            public function findAll(?string $tenantId = null, bool $includeDisabled = false): array { return [$this->user]; }
+            public function save(PlatformUser $user): void {}
+            public function update(PlatformUser $user): void {}
+            public function delete(string $id): void {}
+            public function reserveLoginAttempt(PlatformUser $user, int $maxAttempts): bool
+            {
+                if ($this->reserve) {
+                    throw new \RuntimeException('lock wait timeout');
+                }
+
+                return false;
+            }
+            public function lockIfExhausted(PlatformUser $user, int $maxAttempts, int $lockSeconds): ?PlatformUser { throw new \RuntimeException('deadlock'); }
+        };
+        $log = sys_get_temp_dir() . '/user-authenticator-' . bin2hex(random_bytes(6)) . '.log';
+        $previous = ini_get('error_log');
+        ini_set('error_log', $log);
+        try {
+            $wrong = self::authenticator($users)->attempt('admin@example.test', 'not-the-password');
+            $users->reserve = false;
+            $exhausted = self::authenticator($users)->attempt('admin@example.test', self::PASSWORD);
+            $lines = array_map(
+                static fn (string $line): string => (string) preg_replace('/^\[[^\]]*\] /', '', $line),
+                file($log, FILE_IGNORE_NEW_LINES) ?: [],
+            );
+        } finally {
+            ini_set('error_log', $previous === false ? '' : $previous);
+            @unlink($log);
+        }
+
+        self::assertSame(AuthFailure::WrongPassword, $wrong->failure, 'sign-in is not blocked by the counter');
+        self::assertSame(AuthFailure::Locked, $exhausted->failure);
+        self::assertSame([
+            '[Semitexa] Login attempt could not be counted; the lockout does not limit it user=u-1 error=lock wait timeout',
+            '[Semitexa] Lockout after a failed login could not be written user=u-1 error=deadlock',
+            '[Semitexa] Lock of an account out of attempts could not be written; it stays refused until one is user=u-1 error=deadlock',
+        ], $lines);
     }
 
     private static function repository(?PlatformUser $user): PlatformUserRepositoryInterface
