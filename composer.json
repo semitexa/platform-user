@@ -11,11 +11,11 @@
     ],
     "require": {
         "php": "^8.4",
-        "semitexa/core": "*",
-        "semitexa/auth": "*",
-        "semitexa/orm": "*",
+        "semitexa/core": ">=2026.10.29.1052 || dev-master",
+        "semitexa/auth": ">=2026.10.29.1052 || dev-master",
+        "semitexa/orm": ">=2026.10.29.1052 || dev-master",
         "semitexa/rbac": "*",
-        "semitexa/mail": "*"
+        "semitexa/mail": ">=2026.10.29.1052 || dev-master"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.0"
@@ -37,10 +37,10 @@
         },
         "semitexa": {
             "floors": {
-                "semitexa/auth": "next",
-                "semitexa/mail": "next",
-                "semitexa/core": "next",
-                "semitexa/orm": "next"
+                "semitexa/auth": "2026.10.29.1052",
+                "semitexa/mail": "2026.10.29.1052",
+                "semitexa/core": "2026.10.29.1052",
+                "semitexa/orm": "2026.10.29.1052"
             }
         }
     },
